@@ -1,0 +1,1182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>gPTP Time-Sync Attack Simulator — Zonal TSN</title>
+<style>
+  :root {
+    color-scheme: light dark;
+    --bg: #f4f5f7;
+    --panel: #ffffff;
+    --text: #16181d;
+    --muted: #5a6270;
+    --border: #d7dbe2;
+    --accent: #2f6fed;
+    --accent-2: #7b5bd6;
+    --ok: #1f9d55;
+    --warn: #c98a02;
+    --bad: #d8342a;
+    --grid: #e3e6eb;
+    --stealth: rgba(201,138,2,0.16);
+    --nodeA: #2f6fed;
+    --nodeB: #d8342a;
+    --nodeC: #1f9d55;
+    --nodeD: #7b5bd6;
+    --thresholdLine: #c98a02;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #0f1115;
+      --panel: #171a21;
+      --text: #e7e9ee;
+      --muted: #9aa2b1;
+      --border: #2a2f3a;
+      --accent: #5b8dff;
+      --accent-2: #a48af0;
+      --ok: #3ecf7e;
+      --warn: #e0b23c;
+      --bad: #ff6b61;
+      --grid: #232734;
+      --stealth: rgba(224,178,60,0.14);
+      --nodeA: #5b8dff;
+      --nodeB: #ff6b61;
+      --nodeC: #3ecf7e;
+      --nodeD: #a48af0;
+      --thresholdLine: #e0b23c;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    padding: 16px;
+  }
+  h1 { font-size: 18px; margin: 0 0 4px; }
+  .subtitle { color: var(--muted); font-size: 12.5px; margin: 0 0 16px; max-width: 900px; line-height: 1.5; }
+  .layout {
+    display: grid;
+    grid-template-columns: 300px 1fr;
+    gap: 14px;
+    align-items: start;
+  }
+  .panel {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px;
+  }
+  .panel h2 {
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--muted);
+    margin: 0 0 10px;
+  }
+  .stack { display: flex; flex-direction: column; gap: 12px; }
+  .btnrow { display: flex; flex-wrap: wrap; gap: 6px; }
+  button {
+    font: inherit;
+    font-size: 12.5px;
+    padding: 7px 11px;
+    border-radius: 7px;
+    border: 1px solid var(--border);
+    background: var(--panel);
+    color: var(--text);
+    cursor: pointer;
+  }
+  button:hover { border-color: var(--accent); }
+  button.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+  button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+  button.ghost { opacity: 0.85; }
+  label.field { display: block; font-size: 12px; color: var(--muted); margin-bottom: 3px; }
+  .row { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+  input[type=number], input[type=text] {
+    width: 100%; font: inherit; font-size: 12.5px; padding: 5px 7px;
+    border-radius: 6px; border: 1px solid var(--border); background: var(--bg); color: var(--text);
+  }
+  input[type=range] { width: 100%; }
+  .sliderval { font-variant-numeric: tabular-nums; font-size: 12px; color: var(--muted); }
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .cards { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-top: 12px; }
+  .card {
+    border: 1px solid var(--border); border-radius: 9px; padding: 10px; background: var(--bg);
+  }
+  .card h3 { margin: 0 0 6px; font-size: 12px; color: var(--muted); font-weight: 600; }
+  .card .verdict { font-size: 15px; font-weight: 700; }
+  .card .verdict.fired { color: var(--bad); }
+  .card .verdict.clear { color: var(--ok); }
+  .card .meta { font-size: 11.5px; color: var(--muted); margin-top: 4px; line-height: 1.5; }
+  canvas { width: 100%; display: block; background: var(--panel); border-radius: 8px; }
+  .chartWrap { border: 1px solid var(--border); border-radius: 9px; padding: 8px; }
+  .chartTitle { font-size: 11.5px; color: var(--muted); margin: 0 0 4px 2px; display:flex; justify-content:space-between;}
+  .legend { display: flex; gap: 10px; font-size: 11px; color: var(--muted); }
+  .legend span { display: inline-flex; align-items: center; gap: 4px; }
+  .dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+  .topoWrap svg { width: 100%; height: auto; }
+  .footer-note { font-size: 11px; color: var(--muted); margin-top: 10px; line-height: 1.5; }
+  .tickReadout { font-variant-numeric: tabular-nums; font-size: 12px; color: var(--muted); }
+  select {
+    font: inherit; font-size: 12.5px; padding: 5px 7px; border-radius: 6px;
+    border: 1px solid var(--border); background: var(--bg); color: var(--text); width: 100%;
+  }
+  .frerRow { display: flex; justify-content: space-between; font-size: 12.5px; padding: 4px 0; border-bottom: 1px dashed var(--border); }
+  .frerRow:last-child { border-bottom: none; }
+  .pill { font-size: 10.5px; padding: 2px 7px; border-radius: 999px; font-weight: 600; }
+  .pill.up { background: color-mix(in srgb, var(--ok) 20%, transparent); color: var(--ok); }
+  .pill.down { background: color-mix(in srgb, var(--bad) 20%, transparent); color: var(--bad); }
+  code { font-size: 11px; background: var(--grid); padding: 1px 5px; border-radius: 4px; }
+</style>
+</head>
+<body>
+
+<h1>gPTP Time-Synchronisation Attack Simulator — Zonal Automotive TSN</h1>
+<p class="subtitle">
+  De-risking model for federated intrusion detection on automotive Ethernet/TSN. Compares a raw
+  clock-offset threshold against sync-tree-aware sibling-residual features (threshold and CUSUM) under
+  a stealthy asymmetric-delay attack that hides inside the envelope of benign thermal drift.
+  All numbers are simulated per the physics assumptions documented inline in <code>sim.js</code> below;
+  see the README for how to swap in OMNeT++/INET traces or a trained model.
+</p>
+
+<div class="layout">
+
+  <!-- ============================= CONTROLS ============================= -->
+  <div class="stack">
+    <div class="panel">
+      <h2>Scenario</h2>
+      <div class="btnrow" id="scenarioButtons"></div>
+      <div class="footer-note" id="scenarioDesc"></div>
+    </div>
+
+    <div class="panel">
+      <h2>Run Control</h2>
+      <div class="btnrow">
+        <button id="btnPlay" class="primary">▶ Play</button>
+        <button id="btnPause">⏸ Pause</button>
+        <button id="btnStep">⏭ Step</button>
+        <button id="btnReset">↺ Reset</button>
+      </div>
+      <div style="margin-top:10px;" class="row">
+        <span class="tickReadout">tick <b id="tickReadout">0</b> / <span id="tickMax">200</span></span>
+        <span class="tickReadout" id="speedReadout"></span>
+      </div>
+      <div style="margin-top:6px;">
+        <label class="field">Playback speed (ticks/sec)</label>
+        <input type="range" id="speedSlider" min="1" max="60" value="20">
+      </div>
+      <div style="margin-top:10px;">
+        <label class="field">Seed</label>
+        <input type="text" id="seedField" value="42">
+      </div>
+    </div>
+
+    <div class="panel">
+      <h2>Attack &amp; Detector Tuning</h2>
+      <div class="stack">
+        <div>
+          <div class="row"><label class="field">Delay-attack ramp rate</label><span class="sliderval" id="rampVal">3.3 ns/tick</span></div>
+          <input type="range" id="rampSlider" min="0.5" max="10" step="0.1" value="3.3">
+        </div>
+        <div>
+          <div class="row"><label class="field">Raw offset threshold</label><span class="sliderval" id="rawThreshVal">250 ns</span></div>
+          <input type="range" id="rawThreshSlider" min="100" max="400" step="5" value="250">
+        </div>
+        <div>
+          <div class="row"><label class="field">Sibling-residual threshold</label><span class="sliderval" id="resThreshVal">80 ns</span></div>
+          <input type="range" id="resThreshSlider" min="20" max="200" step="5" value="80">
+        </div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h2>Export</h2>
+      <div class="btnrow">
+        <button id="btnExportCsv">⬇ Export CSV (this run)</button>
+      </div>
+      <div class="btnrow" style="margin-top:6px;">
+        <button id="btnBatch">⬇ Batch export (training set)</button>
+      </div>
+      <div class="footer-note">
+        Batch mode runs <code>runBatch()</code> headlessly (no rendering) across all four scenarios
+        with multiple seeds and downloads one concatenated CSV — this is how the project generates
+        its training set for the eventual learned detector.
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================= MAIN VIEW ============================= -->
+  <div class="stack">
+
+    <div class="panel">
+      <h2>Topology — CCU (Grandmaster) → Bridge → Zone Controllers</h2>
+      <div class="topoWrap" id="topoWrap"></div>
+    </div>
+
+    <div class="grid2">
+      <div class="chartWrap">
+        <div class="chartTitle">
+          <span>Raw clock offset (ns) — threshold + stealth region</span>
+          <span class="legend" id="legendTop"></span>
+        </div>
+        <canvas id="chartRaw" width="900" height="230"></canvas>
+      </div>
+      <div class="chartWrap">
+        <div class="chartTitle">
+          <span>Sibling residual (ns) — threshold</span>
+          <span class="legend" id="legendBottom"></span>
+        </div>
+        <canvas id="chartResidual" width="900" height="230"></canvas>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h2>Detector Verdicts &amp; Deadline Impact</h2>
+      <div class="cards" id="cards"></div>
+    </div>
+
+    <div class="panel">
+      <h2>FRER — Brake Command Stream (CCU → ZC-B)</h2>
+      <div id="frerPanel"></div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+/* =====================================================================================
+   MODULE 1 — sim.js
+   Pure simulation core. NO DOM access anywhere in this block.
+   This module is the thing that gets replaced, unmodified elsewhere, by CSV traces
+   exported from OMNeT++/INET once the network model is validated in ns-3/OMNeT++.
+   Interface contract:
+     Sim.NODES                              -> ['ZC-A','ZC-B','ZC-C','ZC-D']
+     Sim.SCENARIOS                          -> list of {id, label, desc}
+     Sim.createSimulation(config)           -> { step(), reset(), getConfig(), getHistory() }
+       .step()  advances one gPTP sync interval (125 ms) and returns a SimTick:
+         { tick, rows: [FeatureRow, ...], missedDeadlineThisTick: bool, frer: FrerState }
+       FeatureRow = { tick, node, raw_offset, sibling_residual, link_delay_var,
+                      member_skew, label, scenario, seed }
+   ===================================================================================== */
+(function (global) {
+  'use strict';
+
+  const NODES = ['ZC-A', 'ZC-B', 'ZC-C', 'ZC-D'];
+  const NODE_ROLE = { 'ZC-A': 'perception', 'ZC-B': 'chassis', 'ZC-C': 'powertrain', 'ZC-D': 'body' };
+
+  // Fixed per-node thermal scale factors in [0.90, 1.10]. These are NOT random —
+  // they model manufacturing/placement variance in each node's oscillator's thermal
+  // response and are constant across seeds so the topology itself stays comparable
+  // across runs (only the noise process is reseeded).
+  const THERMAL_FACTOR = { 'ZC-A': 0.97, 'ZC-B': 1.03, 'ZC-C': 0.95, 'ZC-D': 1.05 };
+
+  const SCENARIOS = [
+    { id: 'settled', label: 'Settled', desc: 'Steady-state operation, noise only. Both threshold detectors must stay quiet — this is the false-positive control.' },
+    { id: 'cold_start', label: 'Cold Start', desc: 'Common-mode thermal warm-up on all four nodes (and the grandmaster). Raw offset drifts up to ~500ns — expected to trip the raw threshold. Because the drift is common-mode, sibling residual should stay flat.' },
+    { id: 'delay_attack', label: 'Delay Attack', desc: 'Settled baseline + an asymmetric-delay attack ramping on ZC-B\'s uplink, capped at 235ns — deliberately kept under the raw threshold and under the cold-start envelope so it hides in benign drift. Sibling residual should still expose it.' },
+    { id: 'frer_loss', label: 'FRER Loss', desc: 'FRER member path B degrades silently: inter-member arrival skew grows while path B is still "up" until it stops delivering at t=70. The application sees zero loss because FRER masks it with member A — only the skew metric shows it.' }
+  ];
+
+  const DEFAULT_CONFIG = Object.freeze({
+    scenario: 'settled',
+    seed: 42,
+    ticks: 200,
+    attackRampRate: 3.3,   // ns/tick, asymmetric-delay attack ramp
+    attackCap: 235,        // ns, hard cap on injected attack offset (see TUNING INVARIANT below)
+    rawThreshold: 250,     // ns
+    residualThreshold: 80, // ns
+    scheduleMargin: 180,   // ns, Qbv schedule margin for the brake TT stream on ZC-B
+    frerSkewRatePerTick: 1600, // ns/tick growth of inter-member arrival skew on stream B
+    frerDieTick: 70            // tick at which path B stops delivering entirely
+  });
+
+  // ---- seeded PRNG (mulberry32) + gaussian via Box-Muller, both deterministic given seed ----
+  function mulberry32(seed) {
+    let a = seed >>> 0;
+    return function () {
+      a |= 0; a = (a + 0x6D2B79F5) | 0;
+      let t = Math.imul(a ^ (a >>> 15), 1 | a);
+      t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+  }
+
+  function makeGaussian(rng) {
+    // Box-Muller, cached second sample.
+    let spare = null;
+    return function (mean, sigma) {
+      if (spare !== null) { const v = spare; spare = null; return mean + sigma * v; }
+      let u, v, s;
+      do {
+        u = rng() * 2 - 1;
+        v = rng() * 2 - 1;
+        s = u * u + v * v;
+      } while (s === 0 || s >= 1);
+      const mul = Math.sqrt((-2 * Math.log(s)) / s);
+      spare = v * mul;
+      return mean + sigma * (u * mul);
+    };
+  }
+
+  function clamp(x, lo, hi) { return Math.max(lo, Math.min(hi, x)); }
+  function median(arr) {
+    const a = arr.slice().sort((x, y) => x - y);
+    const n = a.length;
+    return n % 2 ? a[(n - 1) / 2] : (a[n / 2 - 1] + a[n / 2]) / 2;
+  }
+  function variance(arr) {
+    if (arr.length === 0) return 0;
+    const m = arr.reduce((s, x) => s + x, 0) / arr.length;
+    return arr.reduce((s, x) => s + (x - m) * (x - m), 0) / arr.length;
+  }
+
+  function createSimulation(userConfig) {
+    const config = Object.assign({}, DEFAULT_CONFIG, userConfig || {});
+
+    // --- tuning invariant: the stealthy attack must hide UNDER benign drift ---
+    // peak attack offset must sit below the raw threshold AND below the cold-start peak,
+    // otherwise the raw detector would legitimately catch it and the demo proves nothing.
+    const approxColdStartPeak = 500 * Math.max(...NODES.map((n) => THERMAL_FACTOR[n]));
+    if (config.attackCap >= config.rawThreshold) {
+      console.warn('[sim.js] TUNING INVARIANT VIOLATED: attackCap (' + config.attackCap +
+        'ns) is not below rawThreshold (' + config.rawThreshold + 'ns). The stealth demo will not work.');
+    }
+    if (config.attackCap >= approxColdStartPeak) {
+      console.warn('[sim.js] TUNING INVARIANT VIOLATED: attackCap (' + config.attackCap +
+        'ns) is not below the approximate cold-start peak (~' + approxColdStartPeak.toFixed(0) + 'ns).');
+    }
+
+    let rng, gaussian, t, noise, delayWindow, history;
+
+    function reset() {
+      rng = mulberry32(hashSeed(config.seed));
+      gaussian = makeGaussian(rng);
+      t = 0;
+      noise = {}; NODES.forEach((n) => (noise[n] = 0));
+      delayWindow = {}; NODES.forEach((n) => (delayWindow[n] = []));
+      history = [];
+    }
+
+    function hashSeed(seed) {
+      // Accept numeric or string seeds; fold strings into a 32-bit int deterministically.
+      if (typeof seed === 'number') return seed >>> 0;
+      let h = 2166136261;
+      String(seed).split('').forEach((c) => {
+        h ^= c.charCodeAt(0);
+        h = Math.imul(h, 16777619);
+      });
+      return h >>> 0;
+    }
+
+    function attackOffsetFor(node, tick) {
+      if (config.scenario !== 'delay_attack' || node !== 'ZC-B') return 0;
+      return Math.min(config.attackRampRate * tick, config.attackCap);
+    }
+
+    function thermalOffsetFor(node, tick) {
+      if (config.scenario !== 'cold_start') return 0;
+      const A = 500, tau = 55;
+      return A * (1 - Math.exp(-tick / tau)) * THERMAL_FACTOR[node];
+    }
+
+    function frerStateFor(tick) {
+      if (config.scenario !== 'frer_loss') {
+        return { memberA: 'up', memberB: 'up', skew: 0 };
+      }
+      const dead = tick >= config.frerDieTick;
+      const skew = dead
+        ? config.frerSkewRatePerTick * config.frerDieTick
+        : config.frerSkewRatePerTick * tick;
+      return { memberA: 'up', memberB: dead ? 'down' : 'up', skew };
+    }
+
+    function step() {
+      // 1) update bounded random-walk noise for every node (reflect at the clamp
+      //    rather than teleporting, which is the honest behaviour of a real
+      //    oscillator's phase noise near a physical/software guard-band).
+      NODES.forEach((n) => {
+        // Mean-reverting (not pure driftless) bounded walk: a real servo-disciplined
+        // oscillator's residual phase noise reverts toward its recent mean rather than
+        // lingering at a hard clamp, so a 0.5 reversion factor is applied before the
+        // fresh sigma-5ns innovation; the +/-20ns clamp remains the hard physical bound.
+        const d = gaussian(0, 5);
+        noise[n] = clamp(noise[n] * 0.4 + d, -20, 20);
+      });
+
+      const frer = frerStateFor(t);
+      const rows = [];
+      let missedDeadlineThisTick = false;
+
+      NODES.forEach((node) => {
+        const thermal = thermalOffsetFor(node, t);
+        const attack = attackOffsetFor(node, t);
+        const raw_offset = noise[node] + thermal + attack;
+
+        // measured link delay = true (near-constant, small-noise) delay + attack asymmetry.
+        // true delay itself is irrelevant to detection (it's ~constant per link), only its
+        // *variance* over the rolling window matters, which the attack asymmetry inflates.
+        const trueDelayNoise = gaussian(0, 2);
+        const measuredDelay = trueDelayNoise + attack; // attack asymmetry rides on the same ramp
+        const win = delayWindow[node];
+        win.push(measuredDelay);
+        if (win.length > 10) win.shift();
+        const link_delay_var = variance(win);
+
+        rows.push({ node, raw_offset, thermal, attack, measuredDelay, link_delay_var });
+      });
+
+      const offsetsByNode = {};
+      rows.forEach((r) => (offsetsByNode[r.node] = r.raw_offset));
+
+      const featureRows = rows.map((r) => {
+        const others = NODES.filter((n) => n !== r.node).map((n) => offsetsByNode[n]);
+        const sibling_residual = r.raw_offset - median(others);
+        const member_skew = r.node === 'ZC-B' ? frer.skew : 0;
+        const label =
+          (config.scenario === 'delay_attack' && r.node === 'ZC-B' && r.attack > 0) ||
+          (config.scenario === 'frer_loss' && r.node === 'ZC-B' && t < config.frerDieTick)
+            ? 1 : 0;
+
+        if (r.node === 'ZC-B' && Math.abs(r.raw_offset) > config.scheduleMargin) {
+          missedDeadlineThisTick = true;
+        }
+
+        return {
+          tick: t,
+          node: r.node,
+          raw_offset: r.raw_offset,
+          sibling_residual: sibling_residual,
+          link_delay_var: r.link_delay_var,
+          member_skew: member_skew,
+          label: label,
+          scenario: config.scenario,
+          seed: config.seed
+        };
+      });
+
+      const tickResult = { tick: t, rows: featureRows, missedDeadlineThisTick, frer };
+      history.push(tickResult);
+      t += 1;
+      return tickResult;
+    }
+
+    reset();
+
+    return {
+      step,
+      reset,
+      getConfig: () => Object.assign({}, config),
+      getHistory: () => history.slice(),
+      get currentTick() { return t; }
+    };
+  }
+
+  global.Sim = {
+    NODES,
+    NODE_ROLE,
+    THERMAL_FACTOR,
+    SCENARIOS,
+    DEFAULT_CONFIG,
+    createSimulation,
+    // exported so detect.js / self-tests can reuse them without duplicating logic
+    _internal: { mulberry32, makeGaussian, clamp, median, variance }
+  };
+})(typeof window !== 'undefined' ? window : globalThis);
+</script>
+
+<script>
+/* =====================================================================================
+   MODULE 2 — detect.js
+   Detector implementations. Each detector consumes a growing feature window (array of
+   SimTick.rows-shaped arrays, one per elapsed tick, oldest first) and exposes:
+     detect(history) -> { fired: bool, score: number, node: string|null, tick: number|null }
+   A detector is stateless across calls — it recomputes its verdict from the full history
+   each time, which keeps it swappable with a trained model that also just consumes a
+   feature window and returns a verdict (see the STUB at the bottom of this module).
+   NO DOM access in this block.
+   ===================================================================================== */
+(function (global) {
+  'use strict';
+  const NODES = global.Sim.NODES;
+
+  function consecutiveRunFires(history, field, threshold, needConsecutive) {
+    // returns { fired, score, node, tick } — fires when some node exceeds |threshold|
+    // for `needConsecutive` consecutive ticks; localises to the node with the
+    // largest |value| at the tick it first satisfies the run length.
+    const runs = {}; NODES.forEach((n) => (runs[n] = 0));
+    let best = { fired: false, score: 0, node: null, tick: null };
+    for (let i = 0; i < history.length; i++) {
+      const tickRows = history[i].rows;
+      tickRows.forEach((row) => {
+        const v = Math.abs(row[field]);
+        if (v > threshold) runs[row.node] += 1; else runs[row.node] = 0;
+      });
+      if (!best.fired) {
+        let argmaxNode = null, argmaxVal = -Infinity;
+        tickRows.forEach((row) => {
+          const v = Math.abs(row[field]);
+          if (v > argmaxVal) { argmaxVal = v; argmaxNode = row.node; }
+        });
+        const firedNode = tickRows.find((row) => runs[row.node] >= needConsecutive);
+        if (firedNode) {
+          best = { fired: true, score: Math.abs(firedNode[field]), node: firedNode.node, tick: history[i].tick };
+        }
+      }
+    }
+    // live score for UI even when not fired: current max |field| across nodes at latest tick
+    if (history.length) {
+      const last = history[history.length - 1].rows;
+      let m = 0; last.forEach((r) => { m = Math.max(m, Math.abs(r[field])); });
+      best.liveScore = m;
+    } else {
+      best.liveScore = 0;
+    }
+    return best;
+  }
+
+  // ---- 1. RawThreshold: |raw_offset| > threshold for 3 consecutive ticks -----------------
+  function RawThreshold(history, params) {
+    const threshold = (params && params.rawThreshold) || 250;
+    return consecutiveRunFires(history, 'raw_offset', threshold, 3);
+  }
+
+  // ---- 2. ResidualThreshold: |sibling_residual| > threshold for 3 consecutive ticks ------
+  function ResidualThreshold(history, params) {
+    const threshold = (params && params.residualThreshold) || 80;
+    return consecutiveRunFires(history, 'sibling_residual', threshold, 3);
+  }
+
+  // ---- 3. CUSUM: sequential change detection on sibling_residual, per node ---------------
+  // Two-sided CUSUM on the residual (which is ~zero-mean under benign, common-mode-cancelling
+  // conditions). k is the allowed slack (drift the detector tolerates before accumulating),
+  // h is the decision threshold. This is the "honest baseline" a reviewer will ask for:
+  // it needs no windowing, has one clear pair of tuning knobs, and is well understood.
+  function CUSUM(history, params) {
+    const k = (params && params.cusumSlack) || 10;   // ns
+    const h = (params && params.cusumThreshold) || 70; // ns (cumulative)
+    const S = {}; NODES.forEach((n) => (S[n] = { pos: 0, neg: 0 }));
+    let best = { fired: false, score: 0, node: null, tick: null };
+    for (let i = 0; i < history.length; i++) {
+      const tickRows = history[i].rows;
+      tickRows.forEach((row) => {
+        const x = row.sibling_residual;
+        const s = S[row.node];
+        s.pos = Math.max(0, s.pos + x - k);
+        s.neg = Math.max(0, s.neg - x - k);
+        if (!best.fired && (s.pos > h || s.neg > h)) {
+          best = { fired: true, score: Math.max(s.pos, s.neg), node: row.node, tick: history[i].tick };
+        }
+      });
+    }
+    if (history.length) {
+      const last = history[history.length - 1].rows;
+      let m = 0; last.forEach((r) => { const s = S[r.node]; m = Math.max(m, s.pos, s.neg); });
+      best.liveScore = m;
+    } else {
+      best.liveScore = 0;
+    }
+    return best;
+  }
+
+  // ---- FRER skew detector: member-skew growth flags degraded path before it dies --------
+  function FrerSkewDetector(history, params) {
+    const threshold = (params && params.frerSkewThreshold) || 5000; // ns
+    let fired = false, tick = null, score = 0;
+    for (let i = 0; i < history.length; i++) {
+      const row = history[i].rows.find((r) => r.node === 'ZC-B');
+      if (row) score = Math.max(score, row.member_skew);
+      if (!fired && row && row.member_skew > threshold) { fired = true; tick = history[i].tick; }
+    }
+    return { fired, score, node: fired ? 'ZC-B' : null, tick };
+  }
+
+  // ---- STUB: where a trained model plugs in ----------------------------------------------
+  // A learned detector (e.g. a small classifier trained on the CSV export's `label` column,
+  // federated across zone controllers) would implement the exact same signature:
+  //   function LearnedModel(history, params) -> { fired, score, node, tick }
+  // and would slot into the DETECTORS table below with zero changes to sim.js, ui.js, or the
+  // other detectors. It is intentionally NOT implemented here — this project's contribution
+  // is the feature engineering (sibling residuals) and the federated training/aggregation
+  // scheme, evaluated on top of this simulator and later on OMNeT++/INET traces.
+  function LearnedModel_STUB(history, params) {
+    throw new Error('LearnedModel is a stub — plug in a trained model with the same (history, params) -> verdict signature.');
+  }
+
+  global.Detect = {
+    RawThreshold,
+    ResidualThreshold,
+    CUSUM,
+    FrerSkewDetector,
+    LearnedModel_STUB,
+    DETECTORS: [
+      { id: 'raw', label: 'RawThreshold', fn: RawThreshold },
+      { id: 'residual', label: 'ResidualThreshold', fn: ResidualThreshold },
+      { id: 'cusum', label: 'CUSUM', fn: CUSUM }
+    ]
+  };
+})(typeof window !== 'undefined' ? window : globalThis);
+</script>
+
+<script>
+/* =====================================================================================
+   SELF-TEST — runs headlessly against sim.js + detect.js only (no DOM), printed to
+   console on load. This is the acceptance-criteria check requested for the thesis
+   appendix; it must pass with the shipped default seed for the demo to be honest.
+   ===================================================================================== */
+(function (global) {
+  'use strict';
+  function runScenarioHeadless(scenario, overrides) {
+    const sim = Sim.createSimulation(Object.assign({ scenario, seed: 42, ticks: 200 }, overrides));
+    let last = null;
+    for (let i = 0; i < 200; i++) last = sim.step();
+    return { history: sim.getHistory(), config: sim.getConfig() };
+  }
+
+  function firstMissedDeadlineTick(history) {
+    for (const h of history) if (h.missedDeadlineThisTick) return h.tick;
+    return null;
+  }
+
+  function selfTest() {
+    const results = [];
+    const params = { rawThreshold: 250, residualThreshold: 80 };
+
+    // settled: neither threshold detector fires
+    {
+      const { history } = runScenarioHeadless('settled');
+      const raw = Detect.RawThreshold(history, params);
+      const res = Detect.ResidualThreshold(history, params);
+      results.push(['settled: RawThreshold does not fire', raw.fired === false]);
+      results.push(['settled: ResidualThreshold does not fire', res.fired === false]);
+    }
+
+    // cold_start: RawThreshold fires (expected false positive), ResidualThreshold does not
+    {
+      const { history } = runScenarioHeadless('cold_start');
+      const raw = Detect.RawThreshold(history, params);
+      const res = Detect.ResidualThreshold(history, params);
+      results.push(['cold_start: RawThreshold FIRES (expected FP)', raw.fired === true]);
+      results.push(['cold_start: ResidualThreshold does not fire', res.fired === false]);
+    }
+
+    // delay_attack: RawThreshold does not fire; ResidualThreshold fires, localises ZC-B,
+    // and leads the first missed deadline by >= 20 ticks.
+    {
+      const { history } = runScenarioHeadless('delay_attack');
+      const raw = Detect.RawThreshold(history, params);
+      const res = Detect.ResidualThreshold(history, params);
+      const missTick = firstMissedDeadlineTick(history);
+      results.push(['delay_attack: RawThreshold does not fire', raw.fired === false]);
+      results.push(['delay_attack: ResidualThreshold fires', res.fired === true]);
+      results.push(['delay_attack: ResidualThreshold localises ZC-B', res.node === 'ZC-B']);
+      const lead = (res.fired && missTick !== null) ? (missTick - res.tick) : -Infinity;
+      results.push(['delay_attack: detection leads missed deadline by >=20 ticks (lead=' + lead + ')', lead >= 20]);
+    }
+
+    // frer_loss: skew-based detection fires before path B dies at t=70
+    {
+      const { history, config } = runScenarioHeadless('frer_loss');
+      const frer = Detect.FrerSkewDetector(history, {});
+      results.push(['frer_loss: skew detector fires before t=' + config.frerDieTick,
+        frer.fired === true && frer.tick < config.frerDieTick]);
+    }
+
+    // determinism: same seed -> identical output
+    {
+      const a = runScenarioHeadless('delay_attack', { seed: 7 }).history;
+      const b = runScenarioHeadless('delay_attack', { seed: 7 }).history;
+      const same = JSON.stringify(a) === JSON.stringify(b);
+      results.push(['determinism: same seed produces identical output', same]);
+    }
+
+    const pass = results.every((r) => r[1]);
+    console.groupCollapsed('%c[self-test] gPTP TSN attack simulator — ' + (pass ? 'ALL PASS' : 'FAILURES PRESENT'),
+      'font-weight:bold;color:' + (pass ? '#1f9d55' : '#d8342a'));
+    results.forEach(([name, ok]) => {
+      console.log((ok ? '%cPASS ' : '%cFAIL ') + name, 'color:' + (ok ? '#1f9d55' : '#d8342a') + ';font-weight:bold');
+    });
+    console.groupEnd();
+    return pass;
+  }
+
+  global.__gptpSelfTest = selfTest;
+})(typeof window !== 'undefined' ? window : globalThis);
+</script>
+
+<script>
+/* =====================================================================================
+   MODULE 3 — ui.js
+   Rendering and controls only. Owns the DOM, the render loop, and CSV export. Talks to
+   sim.js and detect.js only through their public interfaces above.
+   ===================================================================================== */
+(function () {
+  'use strict';
+
+  const NODES = Sim.NODES;
+  const NODE_COLOR = { 'ZC-A': 'var(--nodeA)', 'ZC-B': 'var(--nodeB)', 'ZC-C': 'var(--nodeC)', 'ZC-D': 'var(--nodeD)' };
+  const NODE_COLOR_HEX = { 'ZC-A': '#2f6fed', 'ZC-B': '#d8342a', 'ZC-C': '#1f9d55', 'ZC-D': '#7b5bd6' };
+
+  let state = {
+    config: Object.assign({}, Sim.DEFAULT_CONFIG),
+    sim: null,
+    history: [],
+    playing: false,
+    playHandle: null
+  };
+
+  function rnd(x, d) {
+    if (x === null || x === undefined || Number.isNaN(x)) return '—';
+    const p = Math.pow(10, d || 0);
+    return (Math.round(x * p) / p).toString();
+  }
+
+  // -------------------------------------------------------------------------------------
+  // Scenario buttons
+  // -------------------------------------------------------------------------------------
+  function buildScenarioButtons() {
+    const wrap = document.getElementById('scenarioButtons');
+    wrap.innerHTML = '';
+    Sim.SCENARIOS.forEach((s) => {
+      const b = document.createElement('button');
+      b.textContent = s.label;
+      b.dataset.id = s.id;
+      b.onclick = () => { setScenario(s.id); };
+      wrap.appendChild(b);
+    });
+    refreshScenarioButtons();
+  }
+  function refreshScenarioButtons() {
+    document.querySelectorAll('#scenarioButtons button').forEach((b) => {
+      b.classList.toggle('active', b.dataset.id === state.config.scenario);
+    });
+    const s = Sim.SCENARIOS.find((s) => s.id === state.config.scenario);
+    document.getElementById('scenarioDesc').textContent = s ? s.desc : '';
+  }
+  function setScenario(id) {
+    state.config.scenario = id;
+    refreshScenarioButtons();
+    resetRun();
+  }
+
+  // -------------------------------------------------------------------------------------
+  // Topology SVG
+  // -------------------------------------------------------------------------------------
+  function buildTopology() {
+    const svg = `
+    <svg viewBox="0 0 760 200" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+          <path d="M0,0 L10,5 L0,10 z" fill="var(--muted)"></path>
+        </marker>
+      </defs>
+      <line x1="90" y1="100" x2="230" y2="100" stroke="var(--muted)" stroke-width="2" marker-end="url(#arrow)"></line>
+      <line x1="310" y1="100" x2="380" y2="40" stroke="var(--muted)" stroke-width="2"></line>
+      <line x1="310" y1="100" x2="380" y2="90" stroke="var(--muted)" stroke-width="2" id="edge-ZC-B"></line>
+      <line x1="310" y1="100" x2="380" y2="140" stroke="var(--muted)" stroke-width="2"></line>
+      <line x1="310" y1="100" x2="380" y2="190" stroke="var(--muted)" stroke-width="2"></line>
+      <line x1="440" y1="40" x2="620" y2="40" stroke="var(--muted)" stroke-width="2" marker-end="url(#arrow)"></line>
+      <line x1="440" y1="90" x2="620" y2="90" stroke="var(--bad)" stroke-width="2.5" marker-end="url(#arrow)" id="edge-brake"></line>
+      <line x1="440" y1="140" x2="620" y2="140" stroke="var(--muted)" stroke-width="2" marker-end="url(#arrow)"></line>
+      <line x1="440" y1="190" x2="620" y2="190" stroke="var(--muted)" stroke-width="2" marker-end="url(#arrow)"></line>
+
+      <rect x="10" y="80" width="80" height="40" rx="8" fill="var(--panel)" stroke="var(--accent)" stroke-width="2"></rect>
+      <text x="50" y="96" text-anchor="middle" font-size="10" fill="var(--text)" font-weight="700">CCU</text>
+      <text x="50" y="110" text-anchor="middle" font-size="8.5" fill="var(--muted)">Grandmaster</text>
+
+      <rect x="230" y="80" width="80" height="40" rx="8" fill="var(--panel)" stroke="var(--border)" stroke-width="2"></rect>
+      <text x="270" y="96" text-anchor="middle" font-size="10" fill="var(--text)" font-weight="700">Bridge</text>
+      <text x="270" y="110" text-anchor="middle" font-size="8.5" fill="var(--muted)">Qbv gate</text>
+
+      <g id="node-ZC-A"><rect x="380" y="20" width="80" height="40" rx="8" fill="var(--panel)" stroke="var(--nodeA)" stroke-width="2"></rect>
+        <text x="420" y="36" text-anchor="middle" font-size="10" fill="var(--text)" font-weight="700">ZC-A</text>
+        <text x="420" y="50" text-anchor="middle" font-size="8" fill="var(--muted)">perception</text></g>
+      <g id="node-ZC-B"><rect x="380" y="70" width="80" height="40" rx="8" fill="var(--panel)" stroke="var(--nodeB)" stroke-width="2"></rect>
+        <text x="420" y="86" text-anchor="middle" font-size="10" fill="var(--text)" font-weight="700">ZC-B</text>
+        <text x="420" y="100" text-anchor="middle" font-size="8" fill="var(--muted)">chassis</text></g>
+      <g id="node-ZC-C"><rect x="380" y="120" width="80" height="40" rx="8" fill="var(--panel)" stroke="var(--nodeC)" stroke-width="2"></rect>
+        <text x="420" y="136" text-anchor="middle" font-size="10" fill="var(--text)" font-weight="700">ZC-C</text>
+        <text x="420" y="150" text-anchor="middle" font-size="8" fill="var(--muted)">powertrain</text></g>
+      <g id="node-ZC-D"><rect x="380" y="170" width="80" height="40" rx="8" fill="var(--panel)" stroke="var(--nodeD)" stroke-width="2"></rect>
+        <text x="420" y="186" text-anchor="middle" font-size="10" fill="var(--text)" font-weight="700">ZC-D</text>
+        <text x="420" y="200" text-anchor="middle" font-size="8" fill="var(--muted)">body</text></g>
+
+      <text x="530" y="30" text-anchor="middle" font-size="8" fill="var(--muted)">sensors</text>
+      <text x="530" y="80" text-anchor="middle" font-size="8" fill="var(--bad)" font-weight="700">brake cmd, TT, 1ms</text>
+      <text x="530" y="130" text-anchor="middle" font-size="8" fill="var(--muted)">actuation</text>
+      <text x="530" y="180" text-anchor="middle" font-size="8" fill="var(--muted)">body ctrl</text>
+    </svg>`;
+    document.getElementById('topoWrap').innerHTML = svg;
+  }
+  function updateTopologyHighlight(localisedNode) {
+    NODES.forEach((n) => {
+      const g = document.getElementById('node-' + n);
+      if (!g) return;
+      const rect = g.querySelector('rect');
+      if (n === localisedNode) {
+        rect.setAttribute('fill', 'var(--bad)');
+        rect.setAttribute('stroke', 'var(--bad)');
+        g.querySelectorAll('text').forEach((t) => t.setAttribute('fill', '#fff'));
+      } else {
+        rect.setAttribute('fill', 'var(--panel)');
+        rect.setAttribute('stroke', NODE_COLOR[n]);
+        g.querySelectorAll('text').forEach((t, i) => t.setAttribute('fill', i === 0 ? 'var(--text)' : 'var(--muted)'));
+      }
+    });
+  }
+
+  // -------------------------------------------------------------------------------------
+  // Canvas line charts (no library)
+  // -------------------------------------------------------------------------------------
+  function drawChart(canvas, series, opts) {
+    const ctx = canvas.getContext('2d');
+    const cssColor = (v) => getComputedStyle(document.documentElement).getPropertyValue(v.replace('var(', '').replace(')', '')).trim() || v;
+    const W = canvas.width, H = canvas.height;
+    ctx.clearRect(0, 0, W, H);
+
+    const padL = 44, padR = 10, padT = 10, padB = 20;
+    const plotW = W - padL - padR, plotH = H - padT - padB;
+
+    const allVals = [];
+    series.forEach((s) => s.data.forEach((v) => allVals.push(v)));
+    if (opts.threshold) { allVals.push(opts.threshold, -opts.threshold); }
+    if (opts.envelopeTop !== undefined) allVals.push(opts.envelopeTop);
+    let yMin = Math.min(0, ...allVals), yMax = Math.max(0, ...allVals);
+    if (!isFinite(yMin) || !isFinite(yMax)) { yMin = -10; yMax = 10; }
+    const pad = (yMax - yMin) * 0.1 || 10;
+    yMin -= pad; yMax += pad;
+
+    const n = opts.windowLen;
+    const xAt = (i) => padL + (plotW * i) / Math.max(1, n - 1);
+    const yAt = (v) => padT + plotH - ((v - yMin) / (yMax - yMin)) * plotH;
+
+    // background grid
+    ctx.strokeStyle = cssColor('var(--grid)');
+    ctx.lineWidth = 1;
+    for (let g = 0; g <= 4; g++) {
+      const yy = padT + (plotH * g) / 4;
+      ctx.beginPath(); ctx.moveTo(padL, yy); ctx.lineTo(W - padR, yy); ctx.stroke();
+      const val = yMax - ((yMax - yMin) * g) / 4;
+      ctx.fillStyle = cssColor('var(--muted)');
+      ctx.font = '9px sans-serif';
+      ctx.textAlign = 'right';
+      ctx.fillText(Math.round(val), padL - 5, yy + 3);
+    }
+
+    // stealth region: band between cold-start envelope and schedule margin
+    if (opts.stealthBand) {
+      const [lo, hi] = opts.stealthBand;
+      ctx.fillStyle = cssColor('var(--stealth)');
+      ctx.fillRect(padL, yAt(hi), plotW, Math.max(0, yAt(lo) - yAt(hi)));
+      ctx.fillStyle = cssColor('var(--warn)');
+      ctx.font = '9px sans-serif';
+      ctx.textAlign = 'left';
+      ctx.fillText('stealth region', padL + 4, yAt(hi) + 10);
+    }
+
+    // threshold line(s)
+    if (opts.threshold) {
+      ctx.strokeStyle = cssColor('var(--thresholdLine)');
+      ctx.setLineDash([4, 3]);
+      ctx.lineWidth = 1.2;
+      [opts.threshold, -opts.threshold].forEach((th) => {
+        ctx.beginPath(); ctx.moveTo(padL, yAt(th)); ctx.lineTo(W - padR, yAt(th)); ctx.stroke();
+      });
+      ctx.setLineDash([]);
+    }
+
+    // zero line
+    ctx.strokeStyle = cssColor('var(--border)');
+    ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(padL, yAt(0)); ctx.lineTo(W - padR, yAt(0)); ctx.stroke();
+
+    // series
+    series.forEach((s) => {
+      ctx.strokeStyle = s.color;
+      ctx.lineWidth = 1.6;
+      ctx.beginPath();
+      s.data.forEach((v, i) => {
+        const x = xAt(i), y = yAt(v);
+        if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+      });
+      ctx.stroke();
+    });
+
+    // firing marker
+    if (opts.fireIndex !== null && opts.fireIndex !== undefined && opts.fireIndex >= 0) {
+      const x = xAt(opts.fireIndex);
+      ctx.strokeStyle = cssColor('var(--bad)');
+      ctx.lineWidth = 1.4;
+      ctx.setLineDash([2, 2]);
+      ctx.beginPath(); ctx.moveTo(x, padT); ctx.lineTo(x, H - padB); ctx.stroke();
+      ctx.setLineDash([]);
+    }
+  }
+
+  function buildLegend(elId) {
+    const el = document.getElementById(elId);
+    el.innerHTML = NODES.map((n) =>
+      `<span><span class="dot" style="background:${NODE_COLOR_HEX[n]}"></span>${n}</span>`).join('');
+  }
+
+  const WINDOW_LEN = 140;
+
+  function renderCharts() {
+    const hist = state.history.slice(-WINDOW_LEN);
+    const rawSeries = NODES.map((n) => ({
+      color: NODE_COLOR_HEX[n],
+      data: hist.map((h) => h.rows.find((r) => r.node === n).raw_offset)
+    }));
+    const resSeries = NODES.map((n) => ({
+      color: NODE_COLOR_HEX[n],
+      data: hist.map((h) => h.rows.find((r) => r.node === n).sibling_residual)
+    }));
+
+    const rawVerdict = Detect.RawThreshold(state.history, state.config);
+    const resVerdict = Detect.ResidualThreshold(state.history, state.config);
+    const rawFireIdx = rawVerdict.fired ? hist.findIndex((h) => h.tick === rawVerdict.tick) : -1;
+    const resFireIdx = resVerdict.fired ? hist.findIndex((h) => h.tick === resVerdict.tick) : -1;
+
+    // cold-start envelope top ~ 500 * max thermal factor; used only to draw the stealth band
+    const coldStartPeak = 500 * Math.max(...NODES.map((n) => Sim.THERMAL_FACTOR[n]));
+
+    drawChart(document.getElementById('chartRaw'), rawSeries, {
+      windowLen: hist.length || 1,
+      threshold: state.config.rawThreshold,
+      stealthBand: [state.config.scheduleMargin, coldStartPeak],
+      fireIndex: rawFireIdx
+    });
+    drawChart(document.getElementById('chartResidual'), resSeries, {
+      windowLen: hist.length || 1,
+      threshold: state.config.residualThreshold,
+      fireIndex: resFireIdx
+    });
+  }
+
+  // -------------------------------------------------------------------------------------
+  // Status cards
+  // -------------------------------------------------------------------------------------
+  function renderCards() {
+    const cardsEl = document.getElementById('cards');
+    const raw = Detect.RawThreshold(state.history, state.config);
+    const res = Detect.ResidualThreshold(state.history, state.config);
+    const cusum = Detect.CUSUM(state.history, state.config);
+
+    let missed = 0, firstMiss = null;
+    state.history.forEach((h) => { if (h.missedDeadlineThisTick) { missed++; if (firstMiss === null) firstMiss = h.tick; } });
+
+    function leadTime(v) {
+      if (!v.fired || firstMiss === null) return '—';
+      return rnd(firstMiss - v.tick, 0) + ' intervals';
+    }
+
+    const cards = [
+      { title: 'RawThreshold', v: raw, note: '&gt; ' + state.config.rawThreshold + 'ns, 3 consecutive ticks' },
+      { title: 'ResidualThreshold', v: res, note: '&gt; ' + state.config.residualThreshold + 'ns, 3 consecutive ticks' },
+      { title: 'CUSUM (baseline)', v: cusum, note: 'sequential change detection on residual' },
+      { title: 'Schedule Impact', v: null, note: 'ZC-B brake TT stream, ' + state.config.scheduleMargin + 'ns margin' }
+    ];
+
+    cardsEl.innerHTML = cards.map((c) => {
+      if (c.v) {
+        return `<div class="card">
+          <h3>${c.title}</h3>
+          <div class="verdict ${c.v.fired ? 'fired' : 'clear'}">${c.v.fired ? 'FIRED' : 'clear'}</div>
+          <div class="meta">
+            node: <b>${c.v.node || '—'}</b><br>
+            fired at tick: <b>${c.v.fired ? c.v.tick : '—'}</b><br>
+            lead vs first missed deadline: <b>${leadTime(c.v)}</b><br>
+            score: ${rnd(c.v.fired ? c.v.score : c.v.liveScore, 1)}<br>
+            <span style="opacity:.7">${c.note}</span>
+          </div>
+        </div>`;
+      }
+      return `<div class="card">
+        <h3>${c.title}</h3>
+        <div class="verdict ${missed > 0 ? 'fired' : 'clear'}">${missed} missed</div>
+        <div class="meta">
+          first miss at tick: <b>${firstMiss === null ? '—' : firstMiss}</b><br>
+          <span style="opacity:.7">${c.note}</span>
+        </div>
+      </div>`;
+    }).join('');
+
+    updateTopologyHighlight(res.fired ? res.node : (raw.fired ? raw.node : null));
+  }
+
+  // -------------------------------------------------------------------------------------
+  // FRER panel
+  // -------------------------------------------------------------------------------------
+  function renderFrer() {
+    const el = document.getElementById('frerPanel');
+    const last = state.history[state.history.length - 1];
+    const frer = last ? last.frer : { memberA: 'up', memberB: 'up', skew: 0 };
+    const skewDet = Detect.FrerSkewDetector(state.history, state.config);
+    el.innerHTML = `
+      <div class="frerRow"><span>Member A (primary path)</span><span class="pill up">up</span></div>
+      <div class="frerRow"><span>Member B (redundant path)</span><span class="pill ${frer.memberB === 'up' ? 'up' : 'down'}">${frer.memberB}</span></div>
+      <div class="frerRow"><span>Inter-member arrival skew</span><span>${rnd(frer.skew, 0)} ns</span></div>
+      <div class="frerRow"><span>Application-visible loss</span><span class="pill up">none (masked by FRER)</span></div>
+      <div class="frerRow"><span>Skew detector</span>
+        <span class="pill ${skewDet.fired ? 'down' : 'up'}">${skewDet.fired ? ('fired @ tick ' + skewDet.tick) : 'clear'}</span></div>
+    `;
+  }
+
+  function render() {
+    document.getElementById('tickReadout').textContent = state.history.length;
+    document.getElementById('tickMax').textContent = state.config.ticks;
+    renderCharts();
+    renderCards();
+    renderFrer();
+  }
+
+  // -------------------------------------------------------------------------------------
+  // Run control
+  // -------------------------------------------------------------------------------------
+  function resetRun() {
+    stopPlay();
+    state.config.seed = parseSeed(document.getElementById('seedField').value);
+    state.sim = Sim.createSimulation(state.config);
+    state.history = [];
+    render();
+  }
+  function parseSeed(v) {
+    const n = Number(v);
+    return Number.isFinite(n) && v.trim() !== '' ? n : v;
+  }
+  function stepOnce() {
+    if (!state.sim) resetRun();
+    if (state.history.length >= state.config.ticks) { stopPlay(); return; }
+    const tick = state.sim.step();
+    state.history.push(tick);
+    render();
+  }
+  function startPlay() {
+    if (state.playing) return;
+    state.playing = true;
+    const tick = () => {
+      if (!state.playing) return;
+      stepOnce();
+      if (state.history.length >= state.config.ticks) { stopPlay(); return; }
+      const speed = Number(document.getElementById('speedSlider').value);
+      state.playHandle = setTimeout(tick, 1000 / speed);
+    };
+    tick();
+  }
+  function stopPlay() {
+    state.playing = false;
+    if (state.playHandle) clearTimeout(state.playHandle);
+    state.playHandle = null;
+  }
+
+  // -------------------------------------------------------------------------------------
+  // CSV export
+  // -------------------------------------------------------------------------------------
+  const CSV_HEADER = ['tick', 'node', 'raw_offset', 'sibling_residual', 'link_delay_var', 'member_skew', 'label', 'scenario', 'seed'];
+
+  function historyToCsvRows(history) {
+    const rows = [];
+    history.forEach((h) => {
+      h.rows.forEach((r) => {
+        rows.push([r.tick, r.node, r.raw_offset.toFixed(3), r.sibling_residual.toFixed(3),
+          r.link_delay_var.toFixed(3), r.member_skew.toFixed(3), r.label, r.scenario, r.seed]);
+      });
+    });
+    return rows;
+  }
+
+  function downloadCsv(filename, rows) {
+    const csv = [CSV_HEADER.join(','), ...rows.map((r) => r.join(','))].join('\n');
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = filename;
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }
+
+  function exportCurrentRun() {
+    const rows = historyToCsvRows(state.history);
+    downloadCsv(`gptp_run_${state.config.scenario}_seed${state.config.seed}.csv`, rows);
+  }
+
+  // Headless batch runner — this is how the project would generate a training set.
+  // No rendering, no DOM writes beyond the final download.
+  function runBatch(configs) {
+    const allRows = [];
+    configs.forEach((cfg) => {
+      const sim = Sim.createSimulation(cfg);
+      for (let i = 0; i < (cfg.ticks || Sim.DEFAULT_CONFIG.ticks); i++) sim.step();
+      allRows.push(...historyToCsvRows(sim.getHistory()));
+    });
+    downloadCsv('gptp_training_set.csv', allRows);
+    return allRows.length;
+  }
+  window.runBatch = runBatch;
+
+  function defaultBatchConfigs() {
+    const seeds = [1, 2, 3, 4, 5];
+    const configs = [];
+    Sim.SCENARIOS.forEach((s) => {
+      seeds.forEach((seed) => configs.push(Object.assign({}, Sim.DEFAULT_CONFIG, { scenario: s.id, seed })));
+    });
+    return configs;
+  }
+
+  // -------------------------------------------------------------------------------------
+  // Wiring
+  // -------------------------------------------------------------------------------------
+  function wireControls() {
+    document.getElementById('btnPlay').onclick = startPlay;
+    document.getElementById('btnPause').onclick = stopPlay;
+    document.getElementById('btnStep').onclick = stepOnce;
+    document.getElementById('btnReset').onclick = resetRun;
+    document.getElementById('seedField').onchange = resetRun;
+
+    document.getElementById('rampSlider').oninput = (e) => {
+      state.config.attackRampRate = Number(e.target.value);
+      document.getElementById('rampVal').textContent = state.config.attackRampRate.toFixed(1) + ' ns/tick';
+      resetRun();
+    };
+    document.getElementById('rawThreshSlider').oninput = (e) => {
+      state.config.rawThreshold = Number(e.target.value);
+      document.getElementById('rawThreshVal').textContent = state.config.rawThreshold + ' ns';
+      render();
+    };
+    document.getElementById('resThreshSlider').oninput = (e) => {
+      state.config.residualThreshold = Number(e.target.value);
+      document.getElementById('resThreshVal').textContent = state.config.residualThreshold + ' ns';
+      render();
+    };
+    document.getElementById('speedSlider').oninput = (e) => {
+      document.getElementById('speedReadout').textContent = e.target.value + ' ticks/sec';
+    };
+    document.getElementById('speedReadout').textContent = document.getElementById('speedSlider').value + ' ticks/sec';
+
+    document.getElementById('btnExportCsv').onclick = exportCurrentRun;
+    document.getElementById('btnBatch').onclick = () => {
+      const n = runBatch(defaultBatchConfigs());
+      console.log('[ui.js] batch export complete:', n, 'rows');
+    };
+  }
+
+  function init() {
+    buildScenarioButtons();
+    buildTopology();
+    buildLegend('legendTop');
+    buildLegend('legendBottom');
+    wireControls();
+    resetRun();
+    if (typeof window.__gptpSelfTest === 'function') window.__gptpSelfTest();
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init);
+  } else {
+    init();
+  }
+})();
+</script>
+</body>
+</html>
