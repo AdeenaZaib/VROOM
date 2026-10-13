@@ -16,16 +16,31 @@ stay in a narrow band, punctuated by small corrections every syncInterval.
 Each attack breaks that in a different way, which is what the features below
 are built to separate.
 
+Two feature families are emitted:
+
+  within-zone   ctrl_*        the zone controller's own window statistics
+                zone_mean_*   mean/std of those statistics across the
+                zone_std_*    controller and its member ECUs
+
+  cross-zone    sibling_residual_*   the controller's value minus the median
+                                     of the other zones' controllers for the
+                                     SAME window
+
+The cross-zone family is the one a generic traffic-feature detector cannot
+construct: it exists only because gPTP gives every zone a common reference,
+so "what should this zone read right now" is answerable from the other zones.
+Computing it requires all zones to be in scope simultaneously, which is why
+the window is the outer loop and the zone the inner one.
+
 Usage:
     python3 extract_features.py --results ../simulations/results \\
                                 --out features.csv
 
 Requires: pandas, numpy, and opp_scavetool on PATH (ships with OMNeT++).
 """
+# sibling residual 
 
 import argparse
-import io
-import os
 import re
 import subprocess
 import sys
@@ -49,18 +64,42 @@ CONFIG_TO_CLASS = {
     "SyncStarvation": "starvation",
 }
 
-# When each scenario's attack begins, in seconds. Must match omnetpp.ini.
-ATTACK_START = 4.0
+# Fallback only. The attack start is read from run metadata when the run
+# records it; this constant is used when it does not. Keeping a scenario
+# change in omnetpp.ini in sync with a constant here by hand is exactly the
+# kind of silent mislabelling that is worth engineering out.
+DEFAULT_ATTACK_START = 4.0
+ATTACK_START_KEYS = ("attackStart", "attackStartTime", "tAttack")
 
-# Configs whose attack is active for the entire run rather than from
-# ATTACK_START. DriftAttack is here because INET 4.7 will not let
-# ScenarioManager change driftRate at runtime (the parameter is not @mutable),
-# so the victim's oscillator is manipulated from t=0 instead.
+# Configs whose attack is active for the entire run rather than from the
+# attack start time. DriftAttack is here because the INET clock module does
+# not declare driftRate @mutable, so ScenarioManager cannot change it at
+# runtime and the victim's oscillator is manipulated from t=0 instead.
+# NOTE: applied from t=0 this is a constant frequency offset, which the gPTP
+# servo is designed to compensate. It is therefore not a runtime attack, and
+# is retained as a documented framework limitation rather than a detection
+# target. See report Section 7.6.
 ALWAYS_ON_CONFIGS = {"DriftAttack"}
 
 # Which nodes belong to which zone. zone[i] is the controller; ECUs are
 # allocated ecusPerZone at a time.
 ECUS_PER_ZONE = 2
+
+# Base features for which a cross-zone residual is also emitted.
+# mean_offset catches phase divergence; drift_slope catches rate divergence.
+# A delay attack shows mainly in the first, a rate manipulation in the second.
+RESIDUAL_FEATURES = ("mean_offset", "drift_slope")
+
+FEATURE_KEYS = (
+    "n_events",
+    "mean_offset",
+    "std_offset",
+    "max_abs_offset",
+    "offset_range",
+    "mean_abs_step",
+    "max_abs_step",
+    "drift_slope",
+)
 
 
 def run_scavetool(vec_files, tmp_csv):
@@ -90,6 +129,8 @@ def load_export(csv_path):
 
     vectors = df[df["type"] == "vector"].copy()
     # Keep only the clock traces; the export now contains every vector.
+    # underlyingClock is the free-running oscillator — we want the
+    # gPTP-corrected clock, which is what the detector would actually see.
     vectors = vectors[
         vectors["name"].astype(str).str.startswith("timeChanged")
         & ~vectors["module"].astype(str).str.contains("underlyingClock")
@@ -138,6 +179,29 @@ def zone_of(node):
     return None
 
 
+def meta_int(meta, key):
+    """Read an int run attribute, tolerating absence and OMNeT++'s 'nan'."""
+    raw = meta.get(key)
+    if raw in (None, "", "nan", "None"):
+        return None
+    try:
+        return int(float(raw))
+    except (TypeError, ValueError):
+        return None
+
+
+def attack_start_of(meta):
+    """Attack start from run metadata, falling back to the module constant."""
+    for key in ATTACK_START_KEYS:
+        raw = meta.get(key)
+        if raw not in (None, "", "nan", "None"):
+            try:
+                return float(raw), True
+            except (TypeError, ValueError):
+                pass
+    return DEFAULT_ATTACK_START, False
+
+
 def window_features(times, offsets, w_start, w_end):
     """Features for one node over one window. Returns None if too sparse."""
     mask = (times >= w_start) & (times < w_end)
@@ -145,6 +209,9 @@ def window_features(times, offsets, w_start, w_end):
 
     # A window with no clock-change event at all is itself the signal for
     # sync starvation, so return a zero-event record rather than dropping it.
+    # mean/max are NaN here by design: there is no offset to report. Training
+    # code must handle these rows explicitly — dropping them would delete the
+    # starvation signature.
     if len(t) == 0:
         return {
             "n_events": 0.0,
@@ -176,26 +243,54 @@ def window_features(times, offsets, w_start, w_end):
     }
 
 
-def label_for(config, target_zone, zone, w_start):
+def label_for(config, target_zone, zone, w_start, attack_start):
     """Attacked if this is the victim zone and the attack is active."""
     cls = CONFIG_TO_CLASS.get(config, "benign")
     if cls == "benign":
         return CLASS_IDS["benign"]
     if target_zone is None or zone != target_zone:
         return CLASS_IDS["benign"]
-    if config in ALWAYS_ON_CONFIGS or w_start >= ATTACK_START:
+    if config in ALWAYS_ON_CONFIGS or w_start >= attack_start:
         return CLASS_IDS[cls]
     return CLASS_IDS["benign"]
 
 
-def build(vectors, run_meta, window, stride, sim_limit):
+def window_starts(window, stride, sim_limit):
+    """Window start times as exact multiples of the stride.
+
+    Accumulating `w_start += stride` lets float error drift over ~80
+    iterations, which makes the window grid depend on arithmetic order and
+    breaks exact reproducibility between runs. Indexing avoids that.
+    """
+    n = int(np.floor((sim_limit - window) / stride + 1e-9)) + 1
+    return [i * stride for i in range(max(n, 0))]
+
+
+def build(vectors, run_meta, window, stride, sim_limit, verbose=True):
     rows = []
+    warned_meta = False
 
     for run, group in vectors.groupby("run"):
         meta = run_meta.get(run, {})
         config = meta.get("configname", "Unknown")
-        target_zone = meta.get("targetZone")
-        target_zone = int(target_zone) if target_zone not in (None, "", "nan") else None
+        target_zone = meta_int(meta, "targetZone")
+        attack_start, from_meta = attack_start_of(meta)
+
+        is_attack_cfg = CONFIG_TO_CLASS.get(config, "benign") != "benign"
+
+        # A run configured as an attack but with no recorded victim would be
+        # silently labelled all-benign, which is far worse than failing loudly.
+        if is_attack_cfg and target_zone is None:
+            sys.exit(
+                f"Run {run} uses config '{config}' but records no targetZone.\n"
+                "Every window in this run would be labelled benign.\n"
+                "Add targetZone to omnetpp.ini as a run attribute or itervar,\n"
+                "e.g.  **.targetZone = ${targetZone=0,1,2,3}"
+            )
+        if is_attack_cfg and not from_meta and not warned_meta:
+            print(f"  ! attackStart not in run metadata; using the module "
+                  f"default of {DEFAULT_ATTACK_START}s. Verify against omnetpp.ini.")
+            warned_meta = True
 
         # Collect every node's offset series for this run.
         series = {}
@@ -215,45 +310,135 @@ def build(vectors, run_meta, window, stride, sim_limit):
         for node, data in series.items():
             by_zone.setdefault(zone_of(node), {})[node] = data
 
-        for zone, nodes in sorted(by_zone.items()):
-            w_start = 0.0
-            while w_start + window <= sim_limit:
-                w_end = w_start + window
+        # --- window is the OUTER loop ---------------------------------
+        # Every zone must be in scope at the same instant for the
+        # cross-zone residual to exist. Iterating zones first, as an
+        # earlier version did, makes that impossible.
+        for w_start in window_starts(window, stride, sim_limit):
+            w_end = w_start + window
 
-                per_node = []
-                ctrl = None
+            per_zone_nodes = {}   # zone -> {node: features}
+            ctrl_feats = {}       # zone -> controller's features
+
+            for zone, nodes in sorted(by_zone.items()):
+                feats = {}
                 for node, (t, o) in sorted(nodes.items()):
                     f = window_features(t, o, w_start, w_end)
-                    per_node.append(f)
+                    feats[node] = f
                     if node.startswith("zone["):
-                        ctrl = f
+                        ctrl_feats[zone] = f
+                per_zone_nodes[zone] = feats
 
+            for zone in sorted(per_zone_nodes):
+                ctrl = ctrl_feats.get(zone)
                 if ctrl is None:
-                    w_start += stride
-                    continue
+                    continue  # zone has no controller trace in this run
 
+                per_node = list(per_zone_nodes[zone].values())
+
+                # Within-zone aggregate over the controller and its ECUs.
                 agg = {}
-                for key in ctrl:
+                for key in FEATURE_KEYS:
                     vals = [f[key] for f in per_node if not np.isnan(f[key])]
                     agg[f"zone_mean_{key}"] = float(np.mean(vals)) if vals else 0.0
                     agg[f"zone_std_{key}"] = float(np.std(vals)) if vals else 0.0
+
+                # Cross-zone residual against the other zones' controllers.
+                # The median, not the mean, so a single compromised sibling
+                # cannot drag the reference with it.
+                resid = {}
+                for key in RESIDUAL_FEATURES:
+                    mine = ctrl[key]
+                    others = [
+                        ctrl_feats[z][key] for z in ctrl_feats
+                        if z != zone and not np.isnan(ctrl_feats[z][key])
+                    ]
+                    if others and not np.isnan(mine):
+                        resid[f"sibling_residual_{key}"] = float(mine - np.median(others))
+                        resid[f"sibling_n_{key}"] = float(len(others))
+                    else:
+                        # No reference available (single-zone run, or this
+                        # window had no events anywhere). 0.0 means "no
+                        # evidence of divergence", which is the right
+                        # default: it is what a healthy zone would produce.
+                        resid[f"sibling_residual_{key}"] = 0.0
+                        resid[f"sibling_n_{key}"] = float(len(others))
 
                 record = {
                     "run": run,
                     "config": config,
                     "zone": zone,
+                    "target_zone": target_zone if target_zone is not None else -1,
                     "window_start": w_start,
-                    "label": label_for(config, target_zone, zone, w_start),
+                    "label": label_for(config, target_zone, zone, w_start, attack_start),
                 }
                 # Controller-local features carry the "ctrl_" prefix; the
-                # aggregate over the whole zone carries "zone_".
+                # aggregate over the whole zone carries "zone_"; the
+                # cross-zone comparison carries "sibling_".
                 record.update({f"ctrl_{k}": v for k, v in ctrl.items()})
                 record.update(agg)
+                record.update(resid)
                 rows.append(record)
 
-                w_start += stride
-
     return pd.DataFrame(rows)
+
+
+def sanity_checks(df):
+    """Guards against the failure modes that would silently invalidate results."""
+    problems, notes = [], []
+
+    # 1. Within a single run, attack labels must be confined to one zone.
+    #    Across runs the victim rotates, so an aggregate check would be wrong.
+    for run, g in df.groupby("run"):
+        atk = g[g["label"] != 0]
+        if len(atk) and atk["zone"].nunique() > 1:
+            problems.append(
+                f"run {run}: attack labels span {atk['zone'].nunique()} zones "
+                "(expected 1)"
+            )
+        if len(atk):
+            tz = g["target_zone"].iloc[0]
+            if tz >= 0 and set(atk["zone"].unique()) != {tz}:
+                problems.append(
+                    f"run {run}: labelled zone(s) {sorted(atk['zone'].unique())} "
+                    f"!= targetZone {tz}"
+                )
+
+    # 2. Every zone should appear as victim in at least one run, or the
+    #    classifier can learn zone identity instead of the timing signature.
+    victims = set(df.loc[df["label"] != 0, "zone"].unique())
+    allz = set(df["zone"].unique())
+    if victims and victims != allz:
+        notes.append(
+            f"zones never attacked: {sorted(allz - victims)} — zone identity "
+            "partially predicts the label; consider rotating the victim"
+        )
+
+    # 3. Equal window counts per zone.
+    counts = df["zone"].value_counts()
+    if counts.nunique() != 1:
+        notes.append(f"uneven windows per zone: {counts.to_dict()}")
+
+    # 4. NaNs reach the CSV by design for zero-event windows.
+    nan_cols = {c: int(df[c].isna().sum()) for c in df.columns if df[c].isna().any()}
+    if nan_cols:
+        zero_ev = int((df["ctrl_n_events"] == 0).sum())
+        notes.append(
+            f"NaNs present in {len(nan_cols)} column(s); {zero_ev} windows have "
+            "ctrl_n_events=0. These are the sync-starvation signature — impute "
+            "at training time, do not drop the rows"
+        )
+
+    # 5. The residual must actually vary, or it carries no information.
+    for key in RESIDUAL_FEATURES:
+        col = f"sibling_residual_{key}"
+        if col in df and float(df[col].abs().max()) == 0.0:
+            problems.append(
+                f"{col} is identically zero — the cross-zone reference is not "
+                "being formed (check that >1 zone has a controller trace)"
+            )
+
+    return problems, notes
 
 
 def main():
@@ -265,6 +450,8 @@ def main():
                     help="window length in seconds (default 2x syncInterval)")
     ap.add_argument("--stride", type=float, default=0.125)
     ap.add_argument("--sim-limit", type=float, default=10.0)
+    ap.add_argument("--strict", action="store_true",
+                    help="exit non-zero if any sanity check fails")
     args = ap.parse_args()
 
     results = Path(args.results)
@@ -286,13 +473,51 @@ def main():
     df.to_csv(args.out, index=False)
 
     print(f"\nWrote {len(df)} windows to {args.out}")
+    print(f"Feature columns: {len([c for c in df.columns if c.startswith(('ctrl_','zone_','sibling_'))])}")
+
     print("\nClass balance:")
     inv = {v: k for k, v in CLASS_IDS.items()}
     for label, count in df["label"].value_counts().sort_index().items():
         print(f"  {inv[label]:<12} {count:>6}")
+
     print("\nWindows per zone:")
     for zone, count in df["zone"].value_counts().sort_index().items():
-        print(f"  zone {zone}: {count}")
+        atk = int(((df["zone"] == zone) & (df["label"] != 0)).sum())
+        print(f"  zone {zone}: {count:>5}   ({atk} attack)")
+
+    print("\nRuns per config:")
+    for cfg, g in df.groupby("config"):
+        print(f"  {cfg:<16} {g['run'].nunique():>3} run(s)")
+
+    # The residual is the feature the protocol-native claim rests on, so its
+    # separation is worth seeing on every extraction rather than only at
+    # training time.
+    print("\nCross-zone residual, benign vs attack (|value|):")
+    for key in RESIDUAL_FEATURES:
+        col = f"sibling_residual_{key}"
+        if col not in df:
+            continue
+        b = df.loc[df["label"] == 0, col].abs()
+        a = df.loc[df["label"] != 0, col].abs()
+        if len(a) and len(b):
+            ratio = (a.median() / b.median()) if b.median() else float("inf")
+            print(f"  {col}")
+            print(f"    benign median {b.median():.3e}   attack median {a.median():.3e}"
+                  f"   ratio {ratio:.1f}x")
+
+    problems, notes = sanity_checks(df)
+    if notes:
+        print("\nNotes:")
+        for n in notes:
+            print(f"  - {n}")
+    if problems:
+        print("\nFAILED CHECKS:")
+        for p in problems:
+            print(f"  ! {p}")
+        if args.strict:
+            sys.exit(1)
+    else:
+        print("\nAll sanity checks passed.")
 
 
 if __name__ == "__main__":
