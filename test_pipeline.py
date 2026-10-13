@@ -4,7 +4,7 @@ CARAZONE pipeline tests.
 These are regression tests on the parts of the pipeline that are easy to
 break silently and expensive to notice later: the windowing arithmetic, the
 labelling rule, and the cross-zone residual. Each test states the property it
-protects so that a failure explains itself.
+protects so that a failure explains itself. 
 
 Run:  pytest -v
 """
