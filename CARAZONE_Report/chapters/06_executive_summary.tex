@@ -1,0 +1,37 @@
+\chapter*{Executive Summary}
+\addcontentsline{toc}{chapter}{Executive Summary}
+\textbf{Problem.} Zonal automotive architectures converge previously isolated
+domains onto one TSN Ethernet backbone. Isolation that was formerly physical is
+now logical, enforced by time-aware scheduling that depends on a shared time base
+distributed by gPTP. gPTP carries no authentication, and a class of attacks against
+it, notably asymmetric delay injection, is not addressed by cryptographic
+countermeasures, because delaying an authentic message is as effective as forging
+one. The resulting anomalies are invisible to intrusion detection built on payload
+inspection or traffic-volume statistics.
+
+\textbf{Gap.} Existing work divides into three groups, none of which covers this
+intersection: industrial federated TSN-IDS work that is not automotive or zonal;
+automotive IDS work that targets the CAN bus and therefore has no gate schedule or
+synchronisation tree to observe; and TSN security research that characterises attack
+impact without federated, zone-level operational detection.
+
+\textbf{Approach.} A centralized cross-silo horizontal federated learning design in
+which each zone controller is a client. Clients extract windowed timing features from
+gPTP state, train a shared compact model locally, and exchange only parameters with
+the central vehicle compute unit. The contribution is the use of protocol-native,
+schedule-derived signals as the detection feature space, evaluated against a
+generic-traffic-feature control arm and against centralized and local-only training
+baselines.
+
+\textbf{Status at mid-report.} The simulation environment, attack injection harness
+and feature extraction pipeline are complete and reproducible across seeded runs. A
+centralized detector has been trained and the feature ablation establishing success
+criterion SC-2 has been completed. The federated layer is designed but not yet
+implemented. One attack class is validated, one is documented as unrealisable under the
+current framework, and one is instrumented but not yet extracted.
+
+\textbf{Principal risk.} All zones currently carry identical traffic profiles, which
+would make the federated comparison null by construction; differentiated per-zone
+profiles are scheduled first in Iteration~04. A secondary concern is that the injected
+attack is large relative to the benign steady-state envelope, so an attack-intensity
+sweep is required to establish where detection degrades.

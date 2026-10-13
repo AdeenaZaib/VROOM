@@ -1,0 +1,163 @@
+\chapter{Remaining FYP Plan}
+% ============================================================
+
+\section{Remaining Scope}
+Objectives O4--O6: detection model, federated training and comparative evaluation,
+and attributed alerting driven by real model output.
+
+\section{Remaining Modules and Features}
+M4 Federated Detection Model; M5 Zone Participation and Aggregation; M6 Alerting and
+Presentation; the redundant-topology and IEEE 802.1CB FRER extension to M2 (topology
+and attack injection) and M3 (feature extraction); plus corrective work on M2 and M3
+(DEF-01, DEF-02).
+
+\section{Remaining Iterations}
+
+\textbf{Iteration 03: Detection and decision gate. Complete.}
+The cross-zone sibling residual was added, a centralized detector trained, and the
+feature ablation completed. The decision gate is passed: cross-zone features exceed
+within-zone features by $+0.43$ to $+0.49$ macro-F1 across three models, so the
+federated work proceeds as planned.
+
+\textbf{Iteration 03b: Dataset depth.}
+Extract the \texttt{SyncStarvation} configuration to give a genuine multiclass problem.
+Sweep the injected attack intensity downwards to establish the detection boundary
+against the benign envelope. Introduce differentiated per-zone traffic profiles
+(DEF-02).
+
+\textbf{Iteration 03c: Redundant topology and FRER.}
+The topology half of this iteration is complete in design: the five-zone ring
+(Section~5.5) is generated and passes its structural checks, including the
+single-link-cut partition test that establishes disjoint paths. What remains is to run
+the benign baseline on it and record the four behavioural checks listed in
+Section~5.5.6, then configure IEEE 802.1CB sequence generation at the talkers and
+sequence recovery at the listeners for the redundant streams. Implement
+stream-redundancy manipulation as a third attack class: selective suppression or
+delay of one member of a replicated stream in a single target zone. Add the FRER
+feature family to \texttt{extract\_features.py}, namely inter-member arrival skew,
+sequence-number deviation between redundant members, and per-member inter-arrival
+cadence, together with their cross-zone sibling residuals, computed by the same
+window-outer, zone-inner construction already used for the gPTP features. Exit
+criterion: the FRER residual features reach macro-F1 $> 0.90$ on the redundancy
+attack class while the corresponding within-zone features remain at chance, which
+would show the residual principle to be a property of the zonal architecture rather
+than of the synchronisation plane alone. This iteration is independent of
+Iteration~03b and may run in parallel, since it touches the topology and the feature
+extractor rather than the detector. Migrating the gPTP attack configurations from the
+four-zone tree to the five-zone ring is a prerequisite for both, and is the point at
+which the Chapter~7 results are re-established on the reference topology.
+
+\textbf{Iteration 04: Federation and evaluation.}
+Federated client/server implementation; local-only, centralized-pooled and FedAvg
+arms on identical splits; zone attribution evaluation; detection latency; alert
+surface driven by model output; rule-based fallback; monitoring-interference
+measurement.
+
+\section{Implementation Plan}
+Iteration 03 proceeds in strict order: labelling correction, heterogeneity, third
+attack class, control arm, comparison. The ordering is deliberate, because each step is a
+precondition for interpreting the next. Iteration 03c runs in parallel on the
+topology and extraction path: redundant links, 802.1CB sequence generation and
+recovery, redundancy attack injection, then the FRER feature family and its
+residuals. Iteration 04 proceeds in order: local-only
+baseline, centralized upper bound, FedAvg, then the remaining evaluation dimensions.
+
+\section{Testing and Validation Plan}
+
+\begin{longtable}{p{0.28\textwidth} p{0.66\textwidth}}
+\toprule
+\textbf{Evaluation dimension} & \textbf{Metrics} \\
+\midrule
+\endhead
+Detection quality & Per-class precision, recall, F1; macro-F1; confusion matrix;
+detection rate at fixed false-positive rate \\
+Feature-set comparison & Macro-F1 of protocol-native versus generic traffic features,
+identical model and splits, reported across seeds \\
+Operational detection & Detection latency in synchronisation intervals; false alarms
+per vehicle-hour \\
+Attribution & Zone attribution top-1 accuracy, reported separately from detection \\
+Federated behaviour & Worst-client macro-F1; centralized-to-FedAvg gap; convergence
+rounds; update volume per round \\
+Baselines & Fixed threshold on raw offset; CUSUM on sibling residual; LOF (for
+comparability with published gPTP work) \\
+TSN behaviour & Protected-stream mean and 99th-percentile latency, monitoring enabled
+versus disabled (NFR-08) \\
+Reproducibility & Results across fixed seeds, held-out attack episodes and held-out
+configurations \\
+\bottomrule
+\end{longtable}
+
+Accuracy is excluded as a headline measure throughout, owing to the class imbalance
+reported in Section~7.4. Train/test separation is performed at run and seed
+granularity (integrity rule R3).
+
+\section{Deployment Plan}
+The deliverable is a reproducible research and validation environment: pinned
+dependencies, documented commands, sample configurations, seeds, and exported
+results, executable by a non-author on a clean environment.
+
+Two consumers of detector output are defined. Within the vehicle, the integrity
+verdict (class, affected branch, confidence) is the decision input that
+fault-tolerant timing mechanisms require in order to fail over or enter holdover; the
+relevant standardised machinery provides the failover mechanism but leaves the
+domain-quality decision unspecified. Off-vehicle, attributed alerts populate the vSOC
+incident queue, where per-vehicle anomalies are triaged against fleet-wide
+correlation.
+
+\section{Tentative Timeline}
+The project proposal was defended on 11 September 2026 and this mid evaluation falls
+in the week of 13 October 2026. The final FYP-1 evaluation is scheduled for December
+2026, which is the deadline the sequence below is sized against. The sequence is
+ordered by dependency rather than by date. Iterations 03b and
+03c are independent of each other and may run in parallel; Iteration 04 depends on
+both, because the federated comparison is meaningless until the clients differ
+(03b) and incomplete until the second attack family exists (03c).
+
+\begin{longtable}{p{0.16\textwidth} p{0.40\textwidth} p{0.34\textwidth}}
+\caption{Tentative FYP-2 timeline}\label{tab:timeline}\\
+\toprule
+\textbf{Iteration} & \textbf{Work} & \textbf{Exit condition} \\
+\midrule
+\endfirsthead
+\toprule
+\textbf{Iteration} & \textbf{Work} & \textbf{Exit condition} \\
+\midrule
+\endhead
+03b &
+Extract \texttt{SyncStarvation}; sweep attack intensity downward; introduce
+differentiated per-zone traffic profiles &
+A genuine multiclass dataset exists, and the per-zone divergence of DEF-02 is
+measured rather than assumed \\
+\addlinespace
+03c &
+Benign baseline run on the ring topology; 802.1CB sequence generation and recovery;
+redundancy attack injection; FRER feature family &
+The four behavioural criteria of Section~5.5.6 are met, and FRER residuals reach
+macro-F1 $> 0.90$ while the matching within-zone features remain at chance \\
+\addlinespace
+04 &
+Local-only, centralized-pooled and FedAvg arms on identical splits; zone
+attribution; detection latency; alert surface &
+SC-4 is answered either way: the federated arm is measured against both baselines
+on the same splits, and a null result is reported as a result \\
+\addlinespace
+Final &
+Conformal calibration; monitoring-interference measurement; write-up &
+NFR-08 measured rather than carried over; final report and defence \\
+\bottomrule
+\end{longtable}
+
+Iterations 03b and 03c fall between this mid evaluation and the final FYP-1
+evaluation in December 2026. Iteration~04 and the final items belong to FYP-2.
+
+% [[FILL]] If your department publishes dated FYP-2 milestones, add a date column to
+% the table above. The ordering and the exit conditions do not change; only the dates.
+
+\section{Expected Final Deliverables}
+Reproducible zonal TSN simulation with attack injection; labelled protocol-native
+feature dataset; trained detection model with federated and centralized training
+paths; comparative evaluation report covering detection, attribution, latency and
+federated behaviour; operator-facing alert surface; documented negative results and
+scope boundaries; complete source, configuration and handover package.
+
+% ============================================================

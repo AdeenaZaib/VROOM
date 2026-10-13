@@ -1,0 +1,243 @@
+\chapter{Proposal Feedback and Iteration Plan}
+% ============================================================
+
+\section{Proposal Feedback Summary}
+
+The proposal defence panel returned six comments. Two concerns were each raised
+twice, which the team treated as indicating priority.
+
+\begin{enumerate}
+  \item The proof of concept was assessed as crude, and the panel separately
+        reiterated that the team needs to work on the PoC. This was the most emphasised
+        item.
+  \item The evaluation matrix was assessed as requiring greater precision, and the
+        panel separately noted that more effort should be made in the context of the
+        evaluation metric.
+  \item The team was unable to explain the distinction between static and dynamic
+        environments when questioned.
+  \item More in-depth background study was required.
+  \item The panel suggested better simulators, and add-on applications where the
+        outcomes could be utilised.
+  \item The application perspective needed to be made stronger.
+\end{enumerate}
+
+The panel's overall assessment recorded the project as a good niche project with a
+good direction, subject to the above.
+
+\section{Proposal Action Register}
+
+\begin{longtable}{p{0.04\textwidth} p{0.22\textwidth} p{0.34\textwidth} p{0.10\textwidth} p{0.20\textwidth}}
+\caption{Proposal action register}\\
+\toprule
+\textbf{No.} & \textbf{Feedback / required change} & \textbf{Action taken} & \textbf{Status} & \textbf{Evidence} \\
+\midrule
+\endfirsthead
+\toprule
+\textbf{No.} & \textbf{Feedback / required change} & \textbf{Action taken} & \textbf{Status} & \textbf{Evidence} \\
+\midrule
+\endhead
+1 & PoC is crude; students need to work on the PoC &
+Replaced the proposal-stage illustrative mock-up with an executable simulation:
+four-zone TSN topology with gPTP, three instrumented attack configurations, 15 seeded
+runs, and a feature extraction pipeline producing 4{,}740 labelled windows. The
+operator-facing surface is now explicitly labelled as a presentation mock-up and is no
+longer presented as the proof of concept. &
+Addressed &
+Ch.~6; Fig.~\ref{fig:topology}; Sec.~6.9; Sec.~7.4 \\
+\addlinespace
+2 & Evaluation matrix requires greater precision &
+Replaced the three-row metric summary with a full evaluation specification: per-class
+precision/recall/F1 and macro-F1, detection latency in sync intervals, false alarms per
+vehicle-hour, worst-client macro-F1, centralized-to-FedAvg gap, convergence rounds,
+update volume, and zone-attribution top-1 accuracy reported separately from detection.
+Accuracy removed as a headline measure, with class-imbalance justification. &
+Addressed &
+Sec.~1.9; Sec.~7.1; Sec.~9.5 \\
+\addlinespace
+3 & Unable to explain static vs.\ dynamic environment &
+Both senses are now stated explicitly as load-bearing assumptions: the network
+environment is statically configured (A1), and training is static/one-shot rather than
+continuous (A2). The dependence of the detection approach on a statically known
+expected value is stated, and dynamic reconfiguration is recorded as an explicit
+limitation. &
+Addressed &
+Sec.~1.10 (A1, A2); Sec.~5.4; Sec.~8.11 \\
+\addlinespace
+4 & More in-depth background study required &
+Literature review extended beyond the five sources presented at defence, recorded
+against methodology, results, limitations and resulting design decision; a
+research-to-decision table now links each finding to a concrete design choice; a
+comparison against the departmental FYP repository was added. &
+Addressed &
+Sec.~2.1--2.4; Sec.~2.8; Table~\ref{tab:dims} \\
+\addlinespace
+5 & Better simulators; add-on applications where outcomes can be utilised &
+Simulation framework and version justified against alternatives in an architecture
+decision record. Consumption of detector output defined concretely: the vSOC incident
+queue, and the in-vehicle integrity decision consumed by fault-tolerant timing
+failover. &
+Partially addressed &
+Sec.~5.4; Sec.~1.8; Sec.~9.6 \\
+\addlinespace
+6 & Application perspective needs to be stronger &
+Added deployment positioning (zone controller and central vehicle compute), the
+consuming stakeholders and their required evidence, and the deployment plan
+identifying what the detector's output drives. &
+Partially addressed &
+Sec.~1.3; Sec.~1.8; Sec.~9.6 \\
+\bottomrule
+\end{longtable}
+
+% [[VERIFY]] Items 5 and 6 are marked "Partially addressed" deliberately. Claiming
+% full closure on an application-perspective comment with no deployed consumer is
+% not defensible. If you can show the alert surface driven by real model output
+% before the evaluation, upgrade them.
+
+\section{Iteration Strategy}
+
+Development follows four time-boxed iterations, each ending in a demonstrable
+artefact rather than a document. The ordering is deliberately
+\emph{environment $\rightarrow$ data $\rightarrow$ model $\rightarrow$ federation},
+on the principle that no modelling decision can be validated before the data
+generation path is trustworthy. An explicit decision gate separates Iteration~02 from
+Iteration~03: the detection claim is tested centrally, on a single machine, before any
+federated infrastructure is built, so that a null feature result is discovered before
+it is built upon.
+
+\section{Iteration 1 Plan}
+
+\textbf{Objective.} Establish a reproducible simulation environment in which TSN
+timing attacks produce measurable, repeatable effects.
+
+\begin{itemize}
+  \item \textbf{Selected features:} zonal topology construction; gPTP synchronisation;
+        attack injection harness; seeded reproducible execution.
+  \item \textbf{Deliverables:} \texttt{CarazoneZonalNetwork.ned},
+        \texttt{omnetpp.ini} with four named configurations, executable simulation.
+  \item \textbf{Evidence:} topology rendering, benign vs.\ attack offset traces
+        across multiple seeds.
+  \item \textbf{Exit criterion:} an injected attack produces a timing deviation
+        distinguishable from the benign baseline, reproducibly.
+  \item \textbf{Status: complete.}
+\end{itemize}
+
+\section{Iteration 2 Plan}
+
+\textbf{Objective.} Convert raw simulation output into a labelled, windowed,
+protocol-native feature dataset.
+
+\begin{itemize}
+  \item \textbf{Selected features:} passive signal capture; windowing; feature
+        computation; labelling with zone and class attribution; dataset export.
+  \item \textbf{Deliverables:} \texttt{extract\_features.py}, \texttt{features.csv}.
+  \item \textbf{Evidence:} 225 vectors across 15 runs; 4{,}740 windows; class and
+        per-zone distribution.
+  \item \textbf{Exit criterion:} a labelled dataset regenerable from configuration and
+        seed.
+  \item \textbf{Status: complete.} Labelling is correctly attributed to the victim
+        zone only; the target zone is rotated across runs so that every zone appears
+        as both victim and bystander (Section~7.4).
+\end{itemize}
+
+\section{Work Breakdown and Responsibilities}
+
+\begin{longtable}{p{0.2\textwidth} p{0.37\textwidth} p{0.37\textwidth}}
+\caption{Work breakdown by member}\label{tab:workbreakdown}\\
+\toprule
+\textbf{Area} & \textbf{Adeena Zaib} & \textbf{Khaula Bilqees} \\
+\midrule
+\endfirsthead
+\toprule
+\textbf{Area} & \textbf{Adeena Zaib} & \textbf{Khaula Bilqees} \\
+\midrule
+\endhead
+Setup &
+OMNeT++/INET zonal topology; model architecture &
+TSN-native signal instrumentation; federated learning environment setup \\
+\addlinespace
+Data generation &
+Attack traffic simulation, all scenarios, per zone &
+Feature specification review; labelling scheme \\
+\addlinespace
+Federated learning &
+Per-zone dataset packaging for clients &
+Federated client/server implementation \\
+\addlinespace
+Training and evaluation &
+Attack-specific ground-truth verification &
+Model training; hyperparameter tuning; metrics collection \\
+\addlinespace
+Shared &
+Literature review; architecture diagrams; report writing &
+Literature review; architecture diagrams; report writing \\
+\bottomrule
+\end{longtable}
+
+
+Each member is responsible for being able to explain, modify and defend the complete
+architecture, not only their primary component. No member's ownership is limited to
+documentation, presentation or manual testing.
+
+\section{Progress Against Plan}
+
+\begin{longtable}{p{0.16\textwidth} p{0.38\textwidth} p{0.14\textwidth} p{0.24\textwidth}}
+\caption{Planned milestones versus actual progress}\\
+\toprule
+\textbf{Milestone} & \textbf{Planned outcome} & \textbf{Status} & \textbf{Note} \\
+\midrule
+\endfirsthead
+\toprule
+\textbf{Milestone} & \textbf{Planned outcome} & \textbf{Status} & \textbf{Note} \\
+\midrule
+\endhead
+Iteration 01 & Simulation environment; attacks instrumented & Complete & Four named
+configurations implemented \\
+Iteration 02 & Traffic generation; feature pipeline; labelled per-zone datasets &
+Complete & Cross-zone residual feature outstanding \\
+Iteration 03 & Federated learning pipeline; initial training runs & Not started &
+Preceded by residual feature and zone heterogeneity (Section~3.8) \\
+Iteration 04 & One-shot federated training; evaluation metrics collected & Not started & n/a \\
+\bottomrule
+\end{longtable}
+
+\section{Delays, Deviations and Recovery Plan}
+
+\textbf{D1. Detection model not yet implemented.} The feature dataset is currently the
+end of the implemented pipeline. \emph{Cause:} Iterations 01--02 absorbed more effort
+than planned, primarily in instrumenting protocol-internal signals that are not
+exposed by default. \emph{Recovery:} a centralized detector is scheduled as the first
+Iteration~03 task, deliberately ahead of any federated infrastructure, so that the
+feature claim (SC-2) is tested before further work depends on it.
+
+\textbf{D2. Zone symmetry.} All four zones of the Iteration~1 topology carry identical
+traffic and produce an identical number of feature windows. \emph{Consequence:}
+federated, centralized and local-only training would converge to equivalent models,
+making the federated comparison (SC-4) null by construction. \emph{Recovery:} the
+five-zone reference topology (Section~5.5) builds asymmetry into the structure itself,
+with between three and seven endpoint ECUs per zone and distinct traffic classes by
+zone function, giving quantity, feature and label skew by design. Differentiated
+per-zone traffic profiles and the measurement of the resulting skew remain Iteration~03
+tasks, before any federated training run.
+
+\textbf{D3. Cross-zone residual feature added after mid-iteration review.} The
+feature set initially computed statistics within each zone in isolation, with no
+comparison between a zone and its siblings. \emph{Consequence:} the implemented
+features were timing statistics that a generic detector could also compute, which did
+not support the protocol-native claim SC-2 is designed to test. \emph{Resolution:} the
+extraction loop was restructured so that the observation window is the outer iteration,
+making every zone's controller offset available for the same window, and two residual
+features were added. The ablation in Section~7.5 confirms these carry the detection
+signal. \emph{Closed.}
+
+\textbf{D4. Deviations from the approved proposal.} Three deviations are recorded:
+the number of federated clients changed from three to four and then to five, in each
+case following the topology
+design; team composition is two members rather than the three assumed by the
+proposal's ownership model, with responsibilities reallocated accordingly
+(Section~3.6); and the attack surface was broadened to include FRER (IEEE 802.1CB)
+stream-redundancy manipulation alongside gPTP synchronisation attacks, which the
+approved proposal did not name. FRER remains committed scope and is in progress; it
+is not yet represented in the Iteration~1 dataset because it requires a redundant
+topology, and that extension is scheduled in Section~9.3.
+
+% ============================================================

@@ -1,0 +1,247 @@
+\chapter{Software Requirements}
+% ============================================================
+
+\section{User Interactions / Use Cases}
+
+The system has four actors:
+
+\begin{itemize}
+  \item \textbf{Validation Engineer (human).} Configures scenarios, executes runs,
+        generates datasets, trains and evaluates models, inspects results.
+  \item \textbf{vSOC Analyst (human).} Reviews attributed alerts, triages incidents.
+  \item \textbf{Zone Controller (system).} Observes local TSN signals, extracts
+        features, performs inference, emits alerts, participates in federated rounds.
+  \item \textbf{Central Vehicle Compute (system).} Aggregates model parameters,
+        distributes the global model, receives and logs alerts.
+\end{itemize}
+
+Primary use cases: UC-1 Configure and execute scenario; UC-2 Inject attack with
+ground truth; UC-3 Extract feature dataset; UC-4 Train local model; UC-5 Aggregate
+federated model; UC-6 Classify observation window; UC-7 Emit attributed alert;
+UC-8 Review incident queue; UC-9 Evaluate and export metrics.
+
+\section{Use Case Diagram}
+
+\begin{figure}[htbp]
+\centering
+% ---- Use case diagram ----
+\begin{tikzpicture}[
+  actor/.style={draw, minimum width=1.6cm, minimum height=0.6cm, align=center, font=\small},
+  uc/.style={draw, ellipse, minimum width=3.2cm, minimum height=0.85cm, align=center, font=\scriptsize},
+  node distance=0.45cm and 2.0cm
+]
+\node[actor] (ve) {Validation\\Engineer};
+\node[uc, right=2.2cm of ve, yshift=2.6cm] (uc1) {UC-1 Configure \&\\execute scenario};
+\node[uc, below=of uc1] (uc2) {UC-2 Inject attack\\with ground truth};
+\node[uc, below=of uc2] (uc3) {UC-3 Extract\\feature dataset};
+\node[uc, below=of uc3] (uc4) {UC-4 Train\\local model};
+\node[uc, below=of uc4] (uc5) {UC-5 Aggregate\\federated model};
+\node[uc, below=of uc5] (uc6) {UC-6 Classify\\observation window};
+\node[uc, below=of uc6] (uc7) {UC-7 Emit\\attributed alert};
+\node[uc, below=of uc7] (uc8) {UC-8 Review\\incident queue};
+\node[uc, below=of uc8] (uc9) {UC-9 Evaluate \&\\export metrics};
+
+\node[actor, right=2.2cm of uc5, yshift=1.8cm] (zc) {Zone\\Controller};
+\node[actor, right=2.2cm of uc7, yshift=-0.6cm] (cvc) {Central Vehicle\\Compute};
+\node[actor, below=3.0cm of ve] (an) {vSOC\\Analyst};
+
+\draw (ve) -- (uc1); \draw (ve) -- (uc2); \draw (ve) -- (uc3); \draw (ve) -- (uc9);
+\draw (an) -- (uc8);
+\draw (zc) -- (uc4); \draw (zc) -- (uc6); \draw (zc) -- (uc7);
+\draw (cvc) -- (uc5); \draw (cvc) -- (uc7); \draw (cvc) -- (uc8);
+\end{tikzpicture}
+\caption{Use case diagram. Human actors are shown left, system actors right.}
+\label{fig:usecase}
+\end{figure}
+
+\section{Detailed Use Cases}
+
+\begin{longtable}{p{0.2\textwidth} p{0.74\textwidth}}
+\toprule
+\multicolumn{2}{l}{\textbf{UC-2: Inject attack with ground truth}} \\
+\midrule
+\endfirsthead
+Actor & Validation Engineer \\
+Precondition & A valid topology and benign baseline configuration exist \\
+Trigger & Engineer selects an attack configuration and seed \\
+Main flow &
+(1) Engineer selects attack class, target zone, start time, intensity and seed.
+(2) Simulation executes with injection active over the specified interval.
+(3) Harness records, for every observation window, the attack class and the set of
+affected zones.
+(4) Raw per-node vectors and the ground-truth record are written to the results
+directory. \\
+Postcondition & A seeded, reproducible run with labels attributable to class, window
+and zone \\
+Exception & If the attack produces no measurable deviation from baseline, the run is
+flagged for parameter review rather than silently retained \\
+\bottomrule
+\end{longtable}
+
+\begin{longtable}{p{0.2\textwidth} p{0.74\textwidth}}
+\toprule
+\multicolumn{2}{l}{\textbf{UC-6: Classify observation window}} \\
+\midrule
+\endfirsthead
+Actor & Zone Controller \\
+Precondition & A trained global model is deployed locally \\
+Trigger & A complete observation window of local TSN signals is available \\
+Main flow &
+(1) Controller computes the feature vector for the window.
+(2) Vector is passed to the local copy of the global model.
+(3) Model returns a class and a confidence value.
+(4) If the class is not benign for $k$ consecutive windows, an alert is raised. \\
+Postcondition & Either no action, or an attributed alert \\
+Exception & If no valid model is available, the rule-based fallback detector operates
+and the degraded state is made visible \\
+\bottomrule
+\end{longtable}
+
+\section{Functional Requirements}
+
+\subsection{Module 1: Simulation and Attack Injection}
+\begin{itemize}
+\item \textbf{FR-01.} The system shall instantiate a configurable multi-zone TSN
+topology comprising a grandmaster, a backbone switch, $N$ zone controllers, endpoint
+ECUs and a central vehicle compute node.
+\item \textbf{FR-02.} The system shall synchronise all time-aware nodes using gPTP.
+\item \textbf{FR-03.} The system shall execute reproducibly: a given configuration and
+seed shall regenerate the same scenario structure and ground-truth labels.
+\item \textbf{FR-04.} The system shall generate benign traffic and at least two
+attack classes against TSN synchronisation.
+\item \textbf{FR-05.} The system shall record, for every injected attack, the attack
+class, the affected zone(s), and the start and end time of the attack interval.
+\end{itemize}
+
+\subsection{Module 2: Feature Extraction}
+\begin{itemize}
+\item \textbf{FR-06.} The system shall convert raw per-node simulation output into
+fixed-size observation windows.
+\item \textbf{FR-07.} The system shall compute, per window per zone, protocol-native
+timing features including clock offset statistics, sibling offset residual, and
+synchronisation interval residual.
+\item \textbf{FR-08.} The system shall label each window with its attack class and
+shall attribute the label to the affected zone(s) only.
+\item \textbf{FR-09.} The system shall export the labelled dataset in a documented
+schema with a stable column contract.
+\item \textbf{FR-10.} Feature extraction shall be passive and shall not alter
+forwarding behaviour in the simulated network.
+\end{itemize}
+
+\subsection{Module 3: Detection and Federation}
+\begin{itemize}
+\item \textbf{FR-11.} The system shall train a multiclass detection model on the
+labelled feature dataset.
+\item \textbf{FR-12.} The system shall support training in three configurations,
+namely local-only per zone, centralized pooled, and federated (FedAvg), using an identical
+model architecture and identical scenario splits.
+\item \textbf{FR-13.} The federated coordinator shall receive model parameters only;
+raw feature records shall not leave the client.
+\item \textbf{FR-14.} The system shall classify an observation window into benign or a
+specific attack class and shall return a confidence value.
+\item \textbf{FR-15.} The system shall provide a rule-based fallback detector that
+operates when no valid model or coordinator is available, and shall make the degraded
+state visible.
+\end{itemize}
+
+\subsection{Module 4: Alerting and Evaluation}
+\begin{itemize}
+\item \textbf{FR-16.} The system shall emit alerts containing attack class, affected
+zone, time window, confidence and supporting feature values.
+\item \textbf{FR-17.} The system shall present alerts through an operator-facing
+incident queue supporting filtering by attack class, severity and status.
+\item \textbf{FR-18.} The system shall export machine-readable evaluation metrics
+linked to the configuration, seed and model version that produced them.
+\end{itemize}
+
+\section{Non-Functional Requirements}
+
+\subsection{Reliability}
+\begin{itemize}
+\item \textbf{NFR-01.} A documented configuration and seed shall regenerate the same
+scenario structure and ground-truth labels on a clean environment.
+\item \textbf{NFR-02.} Loss of the coordinator or of a valid model shall produce a
+visible fallback state rather than silent cessation of monitoring.
+\end{itemize}
+
+\subsection{Usability}
+\begin{itemize}
+\item \textbf{NFR-03.} An operator shall be able to execute a scenario, extract
+features and inspect results from documented commands without modifying source code.
+\item \textbf{NFR-04.} Each alert shall carry sufficient attribution for an analyst to
+identify the affected zone and time window without consulting raw simulation output.
+\end{itemize}
+
+\subsection{Performance}
+\begin{itemize}
+\item \textbf{NFR-05.} Local classification of one observation window shall complete
+within one observation interval on the target workstation.
+\item \textbf{NFR-06.} Detection shall occur within a bounded number of
+synchronisation intervals from attack onset, and this latency shall be reported in
+sync intervals rather than wall-clock seconds.
+\end{itemize}
+
+\subsection{Security}
+\begin{itemize}
+\item \textbf{NFR-07.} Raw feature records shall not be transmitted to the
+coordinator; only model parameters and training metadata shall be exchanged.
+\item \textbf{NFR-08.} Passive monitoring shall not increase protected-stream
+99th-percentile latency by more than 5\% in matched enabled/disabled simulation runs.
+\end{itemize}
+
+% [[VERIFY]] NFR-08 is carried over from the approved proposal and is NOT yet
+% measured. It is reported as planned in Section 9.5. Do not claim it as met.
+
+\section{Acceptance Criteria}
+
+\begin{longtable}{p{0.1\textwidth} p{0.84\textwidth}}
+\toprule
+\textbf{Req.} & \textbf{Objective acceptance check} \\
+\midrule
+\endhead
+FR-03 & Two executions with identical configuration and seed produce byte-identical
+ground-truth label files. \\
+FR-05 & For each attack run, the recorded attack interval matches the interval over
+which the timing deviation is observable in the raw trace. \\
+FR-07 & For a benign run, the sibling offset residual remains within the documented
+benign envelope for all zones across all seeds. \\
+FR-08 & For an attack run targeting zone $z$, windows in zone $z$ carry the attack
+label and windows in all other zones carry the benign label. \\
+FR-10 & Protected-stream latency distributions from matched monitoring-enabled and
+monitoring-disabled runs are statistically indistinguishable within the NFR-08 bound. \\
+FR-12 & All three training configurations run to completion on identical splits and
+produce comparable metric files. \\
+FR-13 & Inspection of coordinator-bound messages confirms that no feature record
+fields are present. \\
+NFR-06 & Measured detection latency is lower than the latency at which accumulated
+offset exceeds the configured schedule margin, across all seeds. \\
+\bottomrule
+\end{longtable}
+
+\section{Requirements Traceability}
+
+\begin{longtable}{p{0.08\textwidth} p{0.14\textwidth} p{0.2\textwidth} p{0.22\textwidth} p{0.22\textwidth}}
+\caption{Requirements traceability matrix}\label{tab:traceability}\\
+\toprule
+\textbf{Req.} & \textbf{Module} & \textbf{Design element} & \textbf{Implementation} & \textbf{Test} \\
+\midrule
+\endfirsthead
+\toprule
+\textbf{Req.} & \textbf{Module} & \textbf{Design element} & \textbf{Implementation} & \textbf{Test} \\
+\midrule
+\endhead
+FR-01 & M1 & Sec.~5.1, Fig.~\ref{fig:topology} & \texttt{CarazoneZonalNetwork.ned} & TC-01 \\
+FR-02 & M1 & Sec.~5.2 & gPTP configuration in \texttt{omnetpp.ini} & TC-02 \\
+FR-03 & M1 & Sec.~5.4 & Seeded run configurations & TC-03 \\
+FR-04 & M2 & Sec.~5.8 & \texttt{DelayAttack}, \texttt{DriftAttack}, \texttt{SyncStarvation} & TC-04 \\
+FR-05 & M2 & Sec.~5.7 & Ground-truth record & TC-05 \\
+FR-06 & M3 & Sec.~5.8, Fig.~\ref{fig:activity} & \texttt{extract\_features.py} & TC-06 \\
+FR-07 & M3 & Sec.~5.6 & \texttt{extract\_features.py} & TC-07 \\
+FR-08 & M3 & Sec.~5.7 & \texttt{extract\_features.py} & TC-08 (DEF-01) \\
+FR-09 & M3 & Table~\ref{tab:schema} & \texttt{features.csv} & TC-09 \\
+FR-11--FR-15 & M4, M5 & Sec.~5.1--5.3 & Planned, Iteration 03 & Planned \\
+FR-16--FR-18 & M6 & Sec.~5.1 & Planned, Iteration 04 & Planned \\
+\bottomrule
+\end{longtable}
+
+% ============================================================

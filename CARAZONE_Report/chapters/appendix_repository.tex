@@ -1,0 +1,39 @@
+\chapter{Repository and Contribution Evidence}
+The repository holds the simulation sources, the extraction and training pipeline,
+the automated test suite and this report. Continuous integration evidence is reported
+in Section~8.5 and shown in Figure~\ref{fig:ci}.
+
+\textbf{Repository.} \url{https://github.com/AdeenaZaib/VROOM}
+
+\section*{Per-member commit counts}
+Output of \texttt{git shortlog -sne}:
+
+\begin{verbatim}
+     4  AdeenaZaib <adeenazaib42@gmail.com>
+     3  khaulabilqees <khbilq16@gmail.com>
+\end{verbatim}
+
+\section*{Commit log}
+Output of \texttt{git log --pretty='\%h \%an \%ad \%s' --date=short}:
+
+\begin{verbatim}
+f009ac6  khaulabilqees  2026-10-13  update
+31cb803  khaulabilqees  2026-10-13  update
+2168990  AdeenaZaib     2026-10-13  add CI tests for feature extraction
+                                    and training pipeline
+856beba  AdeenaZaib     2026-10-13  adding the feature extraction stuff
+ed4b0f6  AdeenaZaib     2026-10-13  added gitHub actions test workflow
+8b765f6  khaulabilqees  2026-10-13  topology in omnett
+0506e63  AdeenaZaib     2026-09-08  poc
+\end{verbatim}
+
+The mapping from these commits to project milestones is given in
+Table~\ref{tab:milestones}, and the per-member attribution in Section~8.4.
+
+\textbf{Note on commit granularity.} The history is coarse: seven commits, of which
+two carry the message \texttt{update}. This reflects the repository having been
+introduced partway through Iteration~1 rather than at its start, so earlier work was
+committed in bulk once version control was in place. Commit practice for FYP-2 is to
+commit per logical change with a message naming the module, in the form
+\texttt{M3: confine attack labels to the target zone}, so that the milestone mapping
+above can be produced mechanically rather than reconstructed.

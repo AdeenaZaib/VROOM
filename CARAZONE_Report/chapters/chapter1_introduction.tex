@@ -1,0 +1,332 @@
+\chapter{Introduction and Project Vision}
+% ============================================================
+
+\section{Project Overview}
+CARAZONE is a simulation-based federated intrusion detection system for the
+Time-Sensitive Networking (TSN) Ethernet backbone of an automotive zonal
+electrical/electronic architecture. The system observes TSN protocol-native signals
+at each zone controller, extracts timing features over fixed observation windows,
+trains a shared detection model across zones using federated learning without
+centralising raw feature records, and emits attributed alerts identifying the attack
+class and the affected zone.
+
+The delivered artefact is a laboratory validation and research tool, not a production
+vehicle component. It comprises a configurable zonal TSN simulation, an attack
+injection harness producing ground-truth labels, a feature extraction pipeline, a
+federated training and evaluation workflow, and an alert presentation surface.
+
+\section{Problem Statement}
+No existing work federates intrusion detection built on TSN's own protocol-native
+signals for automotive zonal Ethernet backbones, a topology with heterogeneous
+zone-level data that current federated TSN-IDS work (industrial) and automotive IDS
+work (CAN bus) both miss.
+
+Concretely: in a zonal architecture the isolation between safety-critical and
+non-critical traffic is enforced logically by time-aware scheduling rather than
+physically by separate wiring. That scheduling is meaningful only because every node
+agrees on the current time. An adversary who corrupts the shared time base therefore
+degrades timing guarantees across the backbone without injecting malformed frames,
+without raising traffic volume, and without altering any payload. Detection
+approaches that observe payload content or flow statistics have no visibility of
+this failure mode.
+
+\section{Problem Context and Motivation}
+Automotive E/E architecture is migrating from roughly 70--100 distributed ECUs on
+segmented buses toward a small number of zone controllers linked by a high-bandwidth
+Ethernet backbone. TSN provides the determinism that the displaced buses supplied
+natively. Two TSN mechanisms are central: IEEE~802.1AS (gPTP) distributes a common
+time base, and IEEE~802.1Qbv (TAS) uses that time base to gate traffic classes into
+scheduled windows.
+
+Neither mechanism was standardised with security controls. For gPTP specifically,
+cryptographic authentication does not close the full threat surface: an asymmetric
+delay attack manipulates the \emph{timing} of authentic messages, corrupting the
+peer-delay computation on which offset correction depends. Authentication confirms
+that a message is genuine; it cannot establish that the message arrived when it
+should have.
+
+The consequence is not immediate catastrophic failure. End-to-end protection
+mechanisms at the application layer detect missed updates and degrade to fail-safe
+states. The realistic impact is stealthy availability denial: forced degradation,
+limp-home transitions and driver warnings at a time of the attacker's choosing. This
+is a detection problem rather than a prevention problem, and it is the problem this
+project addresses.
+
+\section{Project Vision}
+To demonstrate that intrusion detection for automotive zonal TSN backbones is more
+effective when built on protocol-native timing signals than on generic traffic
+statistics, and that such detection can be trained across heterogeneous zones using
+federated learning without centralising raw per-zone observations.
+
+\section{Project Objectives}
+\begin{enumerate}
+  \item \textbf{O1.} Implement a configurable multi-zone automotive TSN topology in
+        OMNeT++/INET with gPTP synchronisation and reproducible seeded execution.
+  \item \textbf{O2.} Implement an attack injection harness for TSN timing attacks that
+        produces ground-truth labels with zone, time-window and attack-class attribution.
+  \item \textbf{O3.} Implement a passive feature extraction pipeline converting raw
+        simulation output into labelled, windowed, protocol-native feature vectors.
+  \item \textbf{O4.} Train and evaluate a detection model on those features, and
+        demonstrate by controlled comparison whether protocol-native features
+        outperform generic traffic features on the same scenarios.
+  \item \textbf{O5.} Implement federated training across per-zone clients and compare
+        it against centralized-pooled and local-only training baselines.
+  \item \textbf{O6.} Produce attributed alerts carrying attack class, affected zone,
+        time window and confidence, and present them through an operator-facing surface.
+\end{enumerate}
+
+Objectives O1--O3 are complete at the mid-report stage. O4--O6 are scheduled for
+Iterations~03 and~04.
+
+\section{Project Scope}
+
+\subsection*{Scope statement}
+The project targets the TSN Ethernet backbone connecting zone controllers to central
+compute in automotive zonal E/E architectures, focusing specifically on attacks
+against TSN features. The project trains a detection model across simulated
+zone/platform clients standing in for heterogeneous vehicle architectures (zonal
+topologies), using federated learning. Evaluation compares this federated approach
+against a centralized version of the same detector and against existing
+non-federated detection work, using synthetic attack datasets generated via a TSN
+simulation framework.
+
+\subsection*{Included and excluded functionality}
+
+\begin{longtable}{p{0.44\textwidth} p{0.48\textwidth}}
+\toprule
+\textbf{Included (committed)} & \textbf{Excluded} \\
+\midrule
+\endhead
+Multi-zone TSN topology, simulated in OMNeT++/INET with gPTP synchronisation &
+Hardware testbed or physical vehicle validation \\
+\addlinespace
+Attacks against gPTP synchronisation (delay injection, sync starvation) and against
+FRER (IEEE 802.1CB) stream redundancy &
+Link-layer attacks outside the TSN control and redundancy planes \\
+\addlinespace
+Passive extraction of protocol-native timing features over fixed windows &
+Active probing, packet modification, or in-path interference \\
+\addlinespace
+Supervised multiclass detection (benign $+$ attack classes) &
+Unsupervised/one-class detection as the primary mechanism \\
+\addlinespace
+Federated training (FedAvg) with centralized and local-only baselines &
+Secure aggregation, differential privacy, model-poisoning defence \\
+\addlinespace
+Zone-level attack attribution &
+ECU-level or port-level localisation \\
+\addlinespace
+Operator-facing alert presentation surface &
+Production vehicle integration or in-cabin driver interface \\
+\bottomrule
+\end{longtable}
+
+\subsection*{Scope items in progress, and deferred scope}
+\textbf{FRER-based detection (in scope, implementation in progress).} Frame
+Replication and Elimination for Reliability is committed scope and is under active
+development. It is not yet exercised in the dataset because the
+four-zone tree topology used for Iteration~1 gives each zone a single path to the
+backbone, and FRER requires disjoint redundant paths between talker and listener.
+That blocking dependency has since been removed. A five-zone ring reference topology
+has been designed, generated and structurally validated (Section~5.5); its automated
+check confirms that cutting any single ring or uplink link partitions nothing, which
+is the machine-checkable form of the disjoint-path requirement. The remaining work is
+therefore bounded and specified: configuring the 802.1CB sequence generation and
+recovery functions at the talker and listener ends of the redundant streams;
+injecting stream-redundancy manipulation as an attack; and adding the FRER feature
+family to the extraction pipeline: inter-member arrival skew, sequence-number
+deviation between redundant members, and inter-arrival cadence per member. The
+attack model is stream-redundancy manipulation: selective suppression or delay of one
+member of a replicated stream, which degrades the reliability guarantee while every
+frame remains individually authentic. This family is attractive for the project's
+central claim because its features are structurally independent of the gPTP offset
+residuals, so it tests whether the cross-zone residual principle generalises beyond
+the synchronisation plane. Scheduling and the exit criterion are given in
+Section~9.3. The topology dependency, previously the single blocker, is resolved in
+design and awaits a baseline simulation run.
+
+\textbf{Schedule-window (802.1Qbv) violation detection (deferred).} TAS gate scheduling is not
+yet configured in the topology, so gate-conformance features cannot be computed.
+This is retained as a planned extension because it supplies a second, independent
+protocol-native feature family and a direct physical consequence measure (deadline
+misses).
+
+The 802.1Qbv deferral follows the scope-protection rule established in the project
+proposal, which identifies scope expansion through additional attack classes as a
+high-impact risk and names extension features as the first items to drop. FRER is
+distinguished from that rule because it is a committed objective with a bounded
+dependency rather than an opportunistic addition.
+
+\section{Project Modules}
+
+\begin{longtable}{p{0.05\textwidth} p{0.26\textwidth} p{0.57\textwidth}}
+\toprule
+\textbf{\#} & \textbf{Module} & \textbf{Responsibility} \\
+\midrule
+\endhead
+M1 & Zonal Topology Simulation & Constructs the multi-zone TSN network model:
+grandmaster, backbone switch, zone controllers, endpoint ECUs, central vehicle
+compute; gPTP synchronisation; seeded reproducible execution. \\
+\addlinespace
+M2 & Attack Injection \& Dataset & Injects TSN protocol-native attacks with
+configurable start time, intensity and target; emits ground-truth labels with zone,
+window and class attribution. \\
+\addlinespace
+M3 & Feature Extraction Layer & Passively converts raw per-node simulation output
+into fixed-size windowed feature vectors using protocol-native signals rather than
+generic traffic statistics. \\
+\addlinespace
+M4 & Federated Detection Model & Trains a shared detection model across per-zone
+clients; produces the global model distributed back to zones for inference. \\
+\addlinespace
+M5 & Zone Participation \& Aggregation & Governs how zones with differing traffic
+profiles contribute to the shared federated model. \\
+\addlinespace
+M6 & Alerting \& Presentation & Packages classifications into attributed alerts and
+presents them through an operator-facing incident queue. \\
+\bottomrule
+\end{longtable}
+
+Modules M1--M3 are implemented. M4--M6 are designed and scheduled.
+
+\section{Stakeholders and User Classes}
+
+\begin{longtable}{p{0.24\textwidth} p{0.34\textwidth} p{0.34\textwidth}}
+\toprule
+\textbf{Stakeholder} & \textbf{Need} & \textbf{Evidence required} \\
+\midrule
+\endhead
+Automotive network security / validation engineer &
+Determine whether timing attacks are detectable in a candidate zonal TSN
+configuration &
+Attributed alerts with class, zone, time window, confidence; reproducible scenarios \\
+\addlinespace
+Vehicle Security Operations Centre (vSOC) analyst &
+Triage incoming incidents across a fleet and distinguish fault from campaign &
+Incident queue with severity, zone, attack class, confidence and status \\
+\addlinespace
+TSN validation engineer &
+Confirm that monitoring does not disturb protected traffic &
+Matched monitoring-enabled vs.\ monitoring-disabled timing measurements \\
+\addlinespace
+Project supervisor / evaluator &
+Judge whether the approach is technically justified &
+Baseline comparison, reproducible experiments, documented failure analysis \\
+\addlinespace
+Future researcher &
+Reproduce or extend the work &
+Versioned configuration, seeds, raw outputs, run instructions \\
+\bottomrule
+\end{longtable}
+
+\textbf{Operating context.} The intended deployment position of the detector is a
+zone controller within the vehicle, with aggregation on the central vehicle compute
+unit. In this project the entire system is exercised in simulation on a development
+workstation; no claim of in-vehicle deployment is made.
+
+\section{Success Criteria}
+
+Success is assessed against measurable criteria rather than a single aggregate
+accuracy figure. Class imbalance in the generated data (see Section~7.4) makes
+accuracy uninformative, so it is excluded as a headline measure.
+
+\begin{longtable}{p{0.06\textwidth} p{0.34\textwidth} p{0.52\textwidth}}
+\toprule
+\textbf{ID} & \textbf{Criterion} & \textbf{Measure and target} \\
+\midrule
+\endhead
+SC-1 & Attack effects are measurable and repeatable &
+Injected attacks produce a timing signature distinguishable from benign behaviour
+across $\geq$3 seeds, with ground-truth labels. \textbf{Met} for delay injection. \\
+\addlinespace
+SC-2 & Cross-zone features outperform within-zone features &
+Identical model trained on (a) cross-zone residual and (b) within-zone statistics over
+identical run-level splits; macro-F1 of (a) exceeds (b) by a margin that holds across
+seeds and across models. \textbf{Met}: $+0.43$ to $+0.49$ macro-F1 over three models
+(Section~7.5). \\
+\addlinespace
+SC-3 & Detection is operationally timely &
+Detection latency, reported in synchronisation intervals from attack onset.
+\textbf{Partially met}: two intervals under a three-window confirmation rule
+(Section~7.5). Comparison against a schedule margin awaits time-aware shaping. \\
+\addlinespace
+SC-4 & Federated training is justified &
+FedAvg macro-F1 exceeds local-only training, and the gap to centralized-pooled
+training is quantified. A null result is reported as a finding, not concealed. \\
+\addlinespace
+SC-5 & Attribution is correct &
+Zone attribution accuracy (top-1) reported separately from detection performance. \\
+\addlinespace
+SC-6 & Alert volume is operationally acceptable &
+False alarms per vehicle-hour reported at the chosen operating point, in addition to
+false-positive rate. \\
+\addlinespace
+SC-7 & Results are reproducible &
+A documented configuration and seed regenerate the same scenario structure and
+ground-truth labels on a clean environment. \\
+\bottomrule
+\end{longtable}
+
+\section{Constraints and Assumptions}
+
+\subsection*{Constraints}
+\begin{itemize}
+  \item \textbf{C1.} Evaluation is simulation-based. No hardware TSN testbed or
+        vehicle platform is available, so all traffic and all attacks are synthetic.
+  \item \textbf{C2.} Observable signals are limited to those the simulation framework
+        exposes. Features depending on internal servo state must be instrumented
+        explicitly, and availability is verified per feature before commitment.
+  \item \textbf{C3.} Development and simulation run on a single workstation; the
+        federated setting is simulated (clients as processes), not physically
+        distributed.
+  \item \textbf{C4.} Two-member team over two semesters, which bounds the number of
+        attack classes and model variants that can be implemented and defended.
+\end{itemize}
+
+\subsection*{Assumptions}
+\begin{itemize}
+  \item \textbf{A1. Static network environment.} The topology, the gPTP domain
+        configuration and (when introduced) the gate schedule are statically
+        configured and do not reconfigure at runtime. This assumption is load-bearing:
+        the detection approach uses deviation from a known, configured expectation,
+        which is available \emph{a priori} only in a static environment. In a
+        dynamically reconfigured network, legitimate reconfiguration events would
+        present as anomalies and would require explicit handling. Dynamic
+        reconfiguration is out of scope and recorded as a limitation.
+  \item \textbf{A2. Static (one-shot) training.} Federated training occurs once,
+        offline, before deployment. After the global model is distributed, clients
+        perform inference only; no online retraining occurs. Continuous federated
+        learning would require solving live ground-truth labelling in deployment,
+        which is out of scope.
+  \item \textbf{A3.} The grandmaster is statically assigned and trusted. Attacks
+        originate from a compromised on-path node within a zone, not from the time
+        source itself. Grandmaster-level compromise is addressed as a scope boundary
+        in Section~2.7.
+  \item \textbf{A4.} The aggregation server (central vehicle compute) is trusted.
+        Secure aggregation and model-poisoning resistance are out of scope.
+  \item \textbf{A5.} Monitoring is passive and sits outside the forwarding path.
+\end{itemize}
+
+\section{Ethical, Legal and DEI Considerations}
+
+\textbf{Ethical.} The project uses only synthetic, simulated data. No real vehicle
+data, no OEM data and no personal data are collected or processed. No human subjects
+are involved. Attack implementations target a simulated network only; no capability
+is developed against any real or deployed system.
+
+\textbf{Legal.} No proprietary OEM communication matrices or topology data are used.
+OMNeT++ and INET are used under their respective open-source licences, which are
+recorded in the dependency register (Section~8.8). Published datasets, if
+incorporated for validation, will be used under their stated academic-use terms with
+required citation.
+
+\textbf{DEI and bias.} Synthetic topologies are constructed from published
+architectural patterns rather than any specific manufacturer's proprietary design,
+which avoids embedding a single vendor's assumptions into the evaluation. The
+project produces no output that classifies or affects individuals.
+
+\textbf{Dual-use consideration.} The attack implementations are confined to the
+simulation environment and are described at the level of effect rather than as a
+reusable exploit toolkit.
+
+% ============================================================

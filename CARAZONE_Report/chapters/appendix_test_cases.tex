@@ -1,0 +1,21 @@
+\chapter{Detailed Test Cases}
+Two bodies of testing exist. The manual test cases TC-01 to TC-09 are specified in
+Section~7.3 and their results reported in Section~7.4. In addition, an automated
+suite runs on every push through continuous integration (Figure~\ref{fig:ci}).
+
+The automated suite contains fourteen tests in four groups. Three cover the
+windowing arithmetic, including an exact check that a ten-second run with
+two-second windows at one-second stride yields nine windows, since an off-by-one
+there would alter every row count reported in this document. Three cover the
+labelling rule, including the property that during an attack on one zone the other
+zones remain labelled benign; this is the test that encodes the correction recorded
+as DEF-01. Five cover the feature contract and the split: that no identifier column
+can reach a model, that the within-zone and residual feature sets are disjoint, and
+that no simulation run appears in both the training and test halves. Three are
+dataset invariants that execute only when \texttt{features.csv} is present, and so
+test the extracted dataset itself rather than a fixture: that attack rows are
+confined to the target zone, that the cross-zone residual is not identically zero,
+and that the victim zone rotates across runs.
+
+% [[FILL]] Expand TC-01 to TC-09 with preconditions, steps, test data and observed
+% output. Paste the `pytest -v` output showing all fourteen automated tests passing.

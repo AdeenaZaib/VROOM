@@ -1,0 +1,34 @@
+\chapter*{Abstract}
+\addcontentsline{toc}{chapter}{Abstract}
+Automotive zonal electrical/electronic architectures place safety-critical control
+traffic, sensor streams and infotainment on a single Ethernet backbone, and rely on
+Time-Sensitive Networking (TSN) to keep that traffic deterministic. Determinism
+depends on the generalised Precision Time Protocol (gPTP, IEEE 802.1AS), which was
+standardised without security controls. An attacker who manipulates synchronisation
+can therefore degrade timing guarantees without altering packet content or traffic
+volume, which places the attack outside the detection surface of conventional
+content- and volume-based intrusion detection.
+
+This project develops a federated intrusion detection system that operates on
+TSN protocol-native signals rather than generic traffic statistics. Zone controllers
+act as federated clients, each extracting timing features from locally observed gPTP
+state and training a shared model architecture; a central vehicle compute unit
+aggregates model parameters without receiving raw feature records.
+
+At the mid-report stage, a four-zone automotive TSN topology has been implemented in
+OMNeT++/INET with gPTP synchronisation, and three attack configurations have been
+instrumented. Fifteen seeded simulation runs (three benign and twelve delay-attack runs covering
+four target zones at three seeds each) have produced 225 recorded vectors,
+converted by a Python extraction pipeline into 4{,}740 labelled feature windows.
+Delay-attack injection has been validated against the expected theoretical signature.
+A cross-zone residual feature has been added and a centralized detector trained,
+establishing the project's central premise ahead of schedule: features computed within
+a single zone detect the attack no better than a majority-class predictor
+(macro-F1 0.48--0.54 against a floor of 0.47), whereas two cross-zone residual features
+reach 0.95--0.98 macro-F1 with detection two synchronisation intervals after onset.
+Two negative results are reported: oscillator drift manipulation is not realisable as
+a runtime attack under the simulation framework, and no fixed threshold, neither a
+maximum nor a percentile, separates attack from benign behaviour, because the
+synchronisation convergence transient produces residuals 2.7 times larger than the
+attack does. Remaining work for FYP-2 comprises zone heterogeneity, the federated
+training pipeline, and the comparative evaluation.

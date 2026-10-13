@@ -1,0 +1,105 @@
+\documentclass[oneside]{fast-nuces-bs}
+
+\usepackage{mathptmx}% Times Roman font
+\usepackage[T1]{fontenc}
+\usepackage{sectsty}
+\usepackage{tikz-uml}
+\usepackage{titlesec}
+
+% ---- added for the CARAZONE report body -------------------------------------
+% These are required by the diagrams and tables in the chapters. The class
+% already loads tikz, graphicx, amsmath and amssymb.
+\usetikzlibrary{positioning,arrows.meta,shapes.geometric,fit,calc}
+\usepackage{booktabs}
+\usepackage{longtable}
+\usepackage{array}
+\usepackage{float}
+\graphicspath{{figures/}{ThesisFigs/}{./}}
+% The class's \maketitle ends the title page with \null\vfill. The title page
+% is already full, so that overflows into a blank page carrying a stray page
+% number. This removes it without modifying fast-nuces-bs.cls, so the stock
+% class file can still be submitted unchanged. If the patch ever fails to
+% apply, the build still succeeds and the blank page simply returns.
+\patchcmd{\maketitle}{\null\vfill}{}{}{}
+% The class loads natbib in author-year mode, but IEEEtran.bst is a numeric
+% style. Without this line the two disagree and natbib raises an error.
+% This switches citations to numeric and leaves the class file untouched.
+\setcitestyle{numbers,square,comma}
+% -----------------------------------------------------------------------------
+
+% Information about the Thesis
+% -----------------------------------------------------------------------------
+% (All are compulsory, do not delete any line other than author Information)
+% This project has two members, so \authorthree and \authorfour are omitted.
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\department{FAST School of Computing}
+\faculty{Computer Science}
+\degreeyear{2026}
+\degreemonth{October}
+\degreename{Computer Science}
+\campuscity{Islamabad}
+\authorone{Adeena Zaib}{23I-0674}
+\authortwo{Khaula Bilqees}{23I-0574}
+\supervisor{Dr. Muhammad Rizwan}
+\sessionduration{2023-2027}
+\cosupervisor{Dr. Hina Ayaz}
+% The class defines \deanname, \directorname, \hodname and
+% \fypcoordinatorname, but no page in this template prints them, so they are
+% omitted. Restore them if your department adds a signature page.
+\title{CARAZONE: Federated Intrusion Detection for Timing Attacks
+       in Automotive Zonal TSN Architectures}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+% The template's front-matter files reference these; defined here so they
+% resolve to the same values as the metadata above.
+\newcommand{\projecttitle}{\@title}
+\newcommand{\studentone}{Adeena Zaib}
+\newcommand{\studenttwo}{Khaula Bilqees}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Former document starts below this
+\begin{document}
+
+% The class calls \maketitle itself via \AfterEndPreamble, so it must NOT be
+% called here: doing so prints the title page twice. The title page already
+% ends with a page break, so no \cleardoublepage is needed before the front
+% matter; adding one leaves a blank page after the title.
+\pagenumbering{roman}
+\input{chapters/01_students_submission}
+\input{chapters/02_anti_plagiarism}
+\input{chapters/03_authors_declaration}
+\input{chapters/04_abstract}
+\input{chapters/05_acknowledgments}
+\input{chapters/06_executive_summary}
+% The class's \maketitle already emits \tableofcontents, \listoffigures and
+% \listoftables immediately after the title page. Calling them again here, as
+% the stock template does, prints three empty headings on a page of their own.
+\input{chapters/07_abbreviations}
+
+\cleardoublepage
+\pagenumbering{arabic}
+\input{chapters/chapter1_introduction}
+\input{chapters/chapter2_research}
+\input{chapters/chapter3_iteration_plan}
+\input{chapters/chapter4_requirements}
+\input{chapters/chapter5_design}
+\input{chapters/chapter6_iteration1}
+\input{chapters/chapter8_testing}
+\input{chapters/chapter9_development_evidence}
+\input{chapters/chapter10_fyp2_plan}
+\input{chapters/conclusion}
+
+\appendix
+\input{chapters/appendix_action_register}
+\input{chapters/appendix_requirements}
+\input{chapters/appendix_test_cases}
+\input{chapters/appendix_repository}
+\input{chapters/appendix_diagrams}
+\input{chapters/appendix_meetings}
+
+% \nocite{*} lists every entry in references.bib, including those not yet
+% cited in the text. Remove it once Chapter 2 uses \cite{} keys.
+\nocite{*}
+\bibliographystyle{IEEEtran}
+\bibliography{references/references}
+\end{document}

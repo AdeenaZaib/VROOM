@@ -1,0 +1,290 @@
+\chapter{Research and Existing Solutions}
+% ============================================================
+
+\section{Research Method / Approach}
+The literature was investigated in three directions corresponding to the three
+bodies of work the project sits between: (i) federated learning for intrusion
+detection, (ii) automotive in-vehicle network security, and (iii) TSN protocol
+security, specifically gPTP. Sources were drawn from IEEE Xplore, ACM Digital
+Library, ScienceDirect and arXiv, together with the relevant IEEE~802.1 standards
+documents.
+
+Each source was recorded against four fields (methodology, results, limitations,
+and the design decision it influenced) so that the review produces design
+consequences rather than a summary. Candidate sources were retained only where they
+addressed at least one of: TSN protocol-native detection signals, federated
+aggregation under non-IID clients, or automotive zonal architecture.
+
+In addition, a comparison was performed against the departmental FYP repository
+(Fall 2019 -- Fall 2025) to establish that the project does not duplicate prior
+student work. The result of that comparison is reported in Section~2.3.
+
+% [[FILL]] You stated your review is broader than the five papers in the deck.
+% List the additional sources here with the same four fields, then extend Table 2.1.
+
+\section{Existing Solutions / Products}
+
+\begin{longtable}{p{0.16\textwidth} p{0.26\textwidth} p{0.24\textwidth} p{0.26\textwidth}}
+\caption{Reviewed solutions, results and limitations}\\
+\toprule
+\textbf{Source} & \textbf{Methodology} & \textbf{Results} & \textbf{Limitations} \\
+\midrule
+\endfirsthead
+\toprule
+\textbf{Source} & \textbf{Methodology} & \textbf{Results} & \textbf{Limitations} \\
+\midrule
+\endhead
+SAFID (2026) &
+Selective federated learning, TDNet, domain adaptation, post-training quantization &
+99.75\% accuracy on CICIDS2017; 95.75\% on Edge-IIoTset; $6.5\times$
+inference-throughput improvement &
+Evaluated on generic IDS datasets rather than automotive zonal TSN traces;
+industrial segmented networks, not vehicle zonal \\
+\addlinespace
+Y\"ucel et al.\ (2026) &
+Physical avionics TSN testbed; unsupervised anomaly detection using Local Outlier
+Factor on gPTP timing features &
+Detection at 500\,ns and 1000\,ns offsets; F1 remained above 0.95 even for 25\,ns and
+50\,ns attacks &
+Avionics testbed, not automotive zonal TSN; no federated learning; single
+synchronisation domain; unsupervised framing driven by label scarcity that does not
+apply to a simulation-generated dataset \\
+\addlinespace
+TSNZeek (2023) &
+Zeek extension with Spicy packet parsing and rule-based detection for TSN protocols &
+$\approx$5\% CPU overhead; 25\% CPU at 50\,Mbit/s, 45\% at 250\,Mbit/s; up to 2\,ms
+processing lag; detected all seven tested attacks &
+Does not address gPTP timing attacks, federated learning, or automotive zonal
+deployment; rules are stateful and centralized \\
+\addlinespace
+Sorescu et al.\ (2026) &
+Model-based TARA using STRIDE and ISO/SAE 21434 assumptions &
+151 distributed, 259 domain-based and 270 zonal threat rows &
+Threat counts are model outputs, not measured attack probabilities or IDS results \\
+\addlinespace
+Adil et al.\ (2026) &
+Federated collaborative learning, NTTE traffic encoding, TCNnet, INT8 quantization,
+TIMM safety modelling &
+Up to 99.98\% accuracy; model size reduced from 2.81\,MB to 0.23\,MB; collision
+reduction up to 97.9\% &
+Real-time vehicle integration, rare attacks and protocol-specific anomalies remain
+unresolved \\
+\bottomrule
+\end{longtable}
+
+\section{Comparison of Existing Solutions}
+
+Three dimensions are jointly required by this project: federated training, an
+automotive zonal setting, and detection built on TSN protocol-native signals.
+Table~\ref{tab:dims} evaluates the reviewed literature and the closest prior
+departmental FYPs against those dimensions.
+
+\begin{longtable}{p{0.34\textwidth} c c c}
+\caption{Coverage of the three required dimensions}\label{tab:dims}\\
+\toprule
+\textbf{Work} & \textbf{FL} & \textbf{Automotive / zonal} & \textbf{TSN-native signals} \\
+\midrule
+\endfirsthead
+\toprule
+\textbf{Work} & \textbf{FL} & \textbf{Automotive / zonal} & \textbf{TSN-native signals} \\
+\midrule
+\endhead
+SAFID (2026)                & Yes & No & No \\
+Y\"ucel et al.\ (2026)      & No  & No (avionics) & Yes \\
+TSNZeek (2023)              & No  & No (industrial) & Partial (rule-based) \\
+Adil et al.\ (2026)         & Yes & Yes (CAN/embedded) & No \\
+F25-151-R-DIDS-IoV (FYP)    & Yes & Yes (IoV, not zonal) & No \\
+F25-209-R-BastionFed (FYP)  & Yes & No & No \\
+F25-378-D-AlertEye (FYP)    & Yes & No & No \\
+F25-178-R-SafeCharge (FYP)  & No  & EV charging, off-vehicle & No \\
+F25-168-D-NeuroDrive (FYP)  & No  & Yes (OBD-2 bus) & No \\
+\midrule
+\textbf{CARAZONE (this work)} & \textbf{Yes} & \textbf{Yes} & \textbf{Yes} \\
+\bottomrule
+\end{longtable}
+
+No reviewed work covers all three dimensions. One prior departmental project
+(DIDS-IoV) covers two. Across the departmental repository from Fall~2019 to
+Fall~2025, no project addresses TSN, gPTP, FRER, 802.1 deterministic networking or
+automotive Ethernet; the single automotive in-vehicle network security project
+targets the CAN bus.
+
+\section{Limitations and Gaps}
+
+The reviewed work exhibits four limitations relevant to this project:
+
+\begin{enumerate}
+  \item \textbf{Feature space.} Enterprise, IoT and industrial IDS work operates on
+        protocol-agnostic statistical traffic features, because those networks offer
+        no configured schedule or synchronisation structure to compare against. In a
+        deterministic network, the expected value of a timing observation is known in
+        advance from configuration. No reviewed work exploits this asymmetry in an
+        automotive zonal setting.
+  \item \textbf{Domain transfer.} Work that does use gPTP timing signals is situated
+        in avionics, with a single synchronisation domain and a different traffic
+        profile from a vehicle zonal backbone.
+  \item \textbf{Federated evaluation realism.} Federated IDS work commonly evaluates
+        on artificial IID partitions. Zone-level heterogeneity in a vehicle is
+        structural, since a perception zone and a body zone differ in traffic density,
+        stream composition and criticality, and is not represented by a random
+        split.
+  \item \textbf{Operational framing.} Several works report classification quality
+        without detection latency, alert volume at realistic base rates, or the
+        effect of monitoring on the protected traffic it observes.
+\end{enumerate}
+
+\textbf{Gap statement.} No existing work provides federated, zone-level intrusion
+detection for automotive TSN backbones using protocol-native timing signals, with
+evaluation that reports detection quality, attribution, latency and federated
+behaviour under structurally heterogeneous clients.
+
+\section{Proposed Solution}
+CARAZONE addresses the gap with a centralized cross-silo horizontal federated
+learning architecture in which each zone controller is a client. Each client
+observes local gPTP state passively, computes windowed protocol-native features,
+and trains a shared compact model architecture. The central vehicle compute unit
+aggregates parameters using FedAvg and redistributes the global model. Clients then
+perform inference locally and emit attributed alerts.
+
+Two design choices follow directly from the gap:
+
+\textbf{Protocol-native features.} Features are computed as residuals against values
+that TSN configuration makes known in advance: deviation of a node's offset from
+its siblings in the synchronisation tree, deviation of sync message arrival from the
+configured interval, and the variance of measured link delay. These are not available
+to a generic traffic-feature detector, and the controlled comparison against such a
+detector is the project's primary experiment.
+
+\textbf{Federation across zones rather than vehicles.} Clients are zones within one
+vehicle, so the aggregation server is the vehicle's own central compute unit. The
+motivation is not inter-organisational privacy but bandwidth: streaming full timing
+traces from every zone to a central analyser is unbounded best-effort traffic
+competing with the scheduled streams the system protects, whereas periodic exchange
+of fixed-size model parameters is a bounded, schedulable traffic pattern.
+
+\section{Complex Computing Problem}
+
+The project addresses a complex computing problem under the Seoul Accord
+characterisation. Complexity does not arise from combining TSN, machine learning and
+federated learning; it arises from the interaction between timing guarantees,
+low-observable attacks, heterogeneous distributed training and operational
+constraints.
+
+\begin{longtable}{p{0.3\textwidth} p{0.64\textwidth}}
+\toprule
+\textbf{Characteristic} & \textbf{Manifestation in this project} \\
+\midrule
+\endhead
+Conflicting requirements &
+Detection sensitivity competes with false-alarm volume, inference cost on a
+resource-constrained zone controller, federated communication overhead, and the
+requirement that monitoring must not perturb the protected traffic it observes. \\
+\addlinespace
+No obvious solution &
+A stealthy delay attack can be constructed to remain inside the envelope of benign
+oscillator drift, so no fixed threshold separates the two; and federated aggregation
+may degrade rather than improve performance under genuinely non-IID clients. \\
+\addlinespace
+Depth of knowledge &
+Requires IEEE~802.1AS synchronisation mechanics, time-aware scheduling, discrete-event
+network simulation, timing-feature design, and federated optimisation. \\
+\addlinespace
+Beyond standard practice &
+Neither IEEE~802.1AS nor IEEE~802.1Qbv defines a security or detection layer. A
+routine IDS or a routine FL implementation provides neither timing-aware attribution
+nor evaluation of monitoring interference. \\
+\addlinespace
+Significant consequences &
+Missed detection permits forced degradation of safety-relevant functions; excessive
+false alarms make the system operationally unusable at fleet scale. \\
+\addlinespace
+Interdependence &
+Synchronisation behaviour, feature extraction, local training, aggregation strategy
+and deployment inference cost are mutually constraining; a change in window size
+propagates to detection latency, model size and communication volume. \\
+\bottomrule
+\end{longtable}
+
+\section{Technical Challenges}
+
+\begin{enumerate}
+  \item \textbf{Observability of internal protocol state.} Several informative
+        features derive from the synchronisation servo's internal state rather than
+        from any field visible in a packet capture. Whether the simulation framework
+        exposes these, or whether explicit instrumentation is required, must be
+        verified per feature before the feature is committed.
+  \item \textbf{Benign/attack separability.} Benign oscillator behaviour includes
+        thermal and ageing drift whose magnitude can exceed that of a deliberately
+        stealthy attack. Detection must therefore rely on structural rather than
+        magnitude-based discrimination.
+  \item \textbf{Grandmaster-level blind spot.} Detection based on comparison between
+        siblings in the synchronisation tree is, by construction, insensitive to a
+        perturbation that moves the entire tree together. This was confirmed
+        empirically (Section~7.6) and is recorded as a scope boundary: the system
+        addresses link-local timing integrity, not time-source integrity.
+  \item \textbf{Structural client heterogeneity.} For the federated comparison to be
+        meaningful, zones must differ in traffic profile. A symmetric topology makes
+        federated, centralized and local-only training converge to equivalent
+        models and renders the comparison null by construction.
+  \item \textbf{Class imbalance and evaluation validity.} Attack windows are a small
+        minority of all windows. Accuracy is therefore uninformative, and train/test
+        splitting must occur at scenario and seed granularity rather than at window
+        granularity to prevent leakage between adjacent correlated windows.
+\end{enumerate}
+
+\section{Research Findings and Design Decisions}
+
+\begin{longtable}{p{0.24\textwidth} p{0.34\textwidth} p{0.36\textwidth}}
+\toprule
+\textbf{Finding} & \textbf{Source} & \textbf{Design decision} \\
+\midrule
+\endhead
+Automotive TSN can be represented with domains, gateways, periodic streams and
+scheduling in a discrete-event simulator &
+Zhou et al.\ (2021) &
+Use OMNeT++/INET rather than building a simulator from scratch; keep the topology
+small and seeded \\
+\addlinespace
+Clock offset, port state and synchronisation message behaviour expose automotive
+Ethernet synchronisation attacks &
+Fotouhi et al.\ (2023) &
+Commit offset, offset trend and synchronisation-interval features as the core
+feature family \\
+\addlinespace
+Some PTP attacks are stealthy and consume very little bandwidth &
+Berardi et al.\ (2023) &
+Do not rely on packet-volume features; make the generic-traffic-feature detector the
+control arm rather than the baseline to beat on volume \\
+\addlinespace
+gPTP timing features support detection at small offset magnitudes, with F1 above 0.95
+at 25\,ns and 50\,ns &
+Y\"ucel et al.\ (2026) &
+Adopt comparable timing features; adopt LOF as an additional baseline so results are
+comparable to published work \\
+\addlinespace
+Unsupervised framing in prior work is a response to label scarcity in real
+deployments &
+Y\"ucel et al.\ (2026) &
+Use supervised multiclass classification, since simulation supplies ground-truth
+labels; this also yields a model with trainable weights, which plain LOF does not,
+and is therefore FedAvg-compatible without a non-standard aggregation scheme \\
+\addlinespace
+Centralized, local-only and FedAvg comparison exposes the trade-off between federated
+performance and communication cost &
+Digregorio et al.\ (2024) &
+Commit all three arms as the federated evaluation; retain FedProx as an extension \\
+\addlinespace
+Random IID partitions and accuracy-only evaluation overstate federated performance &
+Shahsavari et al.\ (2026) &
+Use structurally heterogeneous zone profiles, split by scenario and seed, and report
+worst-client performance rather than only the mean \\
+\addlinespace
+Loss or manipulation of synchronisation causes clock divergence with a characteristic
+recovery profile &
+Kakade et al.\ (2022) &
+Use divergence and post-attack recovery behaviour as attack-validation signals before
+any model is trained \\
+\bottomrule
+\end{longtable}
+
+% ============================================================

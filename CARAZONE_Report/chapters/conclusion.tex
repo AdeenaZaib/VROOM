@@ -1,0 +1,41 @@
+\chapter{Conclusion}
+% ============================================================
+
+This project addresses intrusion detection for the TSN Ethernet backbone of
+automotive zonal architectures, targeting attacks against TSN protocol features that
+degrade timing guarantees without altering packet content or traffic volume. The
+contribution is the use of protocol-native, schedule-derived signals as the detection
+feature space, trained federatively across zone controllers.
+
+At the mid-report stage the data generation path is complete and reproducible: a
+four-zone TSN topology with gPTP synchronisation, three instrumented attack
+configurations, fifteen seeded runs and a labelled dataset of 4{,}740 feature windows.
+Delay-attack injection has been validated against its expected theoretical signature.
+
+The project's central premise has been tested ahead of schedule and holds. Features
+computed within a single zone detect the attack no better than a majority-class
+predictor; two cross-zone residual features reach 0.95--0.98 macro-F1, detecting two
+synchronisation intervals after onset with no missed attack windows in the
+best-performing arm. The gain is $+0.43$ to $+0.49$ macro-F1 and is insensitive to model
+choice, which is the evidence the contribution statement requires.
+
+Two negative results bound the claim. Oscillator drift manipulation is not realisable as
+a runtime attack under the simulation framework, which reduced the committed attack set
+to two classes. More significantly, no fixed threshold on the offset residual separates attack from
+benign behaviour. The synchronisation convergence transient at run start produces
+residuals 2.7 times larger than the attack, and because those windows constitute
+roughly 11\% of benign data, no percentile-based cut-off succeeds either. The benign
+class is a mixture of a convergence population and a steady-state population with the
+attack lying between them in magnitude, which is what makes a learned detector necessary
+rather than merely convenient, and what makes the second residual feature, weak on its
+own, the one that separates the two benign populations.
+
+The remaining work is the detection model, the federated training pipeline and the
+comparative evaluation. The plan sequences a central decision gate, the comparison
+between protocol-native and generic traffic features, ahead of federated
+infrastructure, so that the project's primary claim is tested before further work is
+built upon it.
+
+% ============================================================
+\appendix
+% ============================================================
