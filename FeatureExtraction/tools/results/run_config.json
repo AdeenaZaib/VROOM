@@ -1,0 +1,10 @@
+{
+  "features_file": "features.csv",
+  "seeds": 5,
+  "k_consec": 3,
+  "feature_counts": {
+    "within_zone": 24,
+    "residual": 2,
+    "combined": 26
+  }
+}
