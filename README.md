@@ -11,7 +11,7 @@ de-risking model for that project's core claim:
 Open `gptp-tsn-demo.html` directly in a browser. No build step, no npm, no CDN, no network
 access required.
 
-## What it simulates
+## What it simulates 
 
 A central compute unit (CCU, gPTP grandmaster) syncs four zone controllers through one
 bridge: **ZC-A** (perception), **ZC-B** (chassis), **ZC-C** (powertrain), **ZC-D** (body).
