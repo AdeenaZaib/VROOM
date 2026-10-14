@@ -6,6 +6,7 @@ import inet.node.ethernet.EthernetLink;
 import inet.node.tsn.TsnClock;
 import inet.node.tsn.TsnDevice;
 import inet.node.tsn.TsnSwitch;
+import inet.common.scenario.ScenarioManager;
 
 network ZonalRingTopology extends TsnNetworkBase
 {
@@ -17,6 +18,7 @@ network ZonalRingTopology extends TsnNetworkBase
         swRR: TsnSwitch { @display("p=800,900"); }
         swC: TsnSwitch { @display("p=550,600"); }
         masterClock: TsnClock { @display("p=550,450"); }
+        scenarioManager: ScenarioManager { @display("p=1000,80"); }
         // ---- zone FL
         lidarFL: TsnDevice { @display("p=95,404"); }
         radarFL: TsnDevice { @display("p=71,325"); }
