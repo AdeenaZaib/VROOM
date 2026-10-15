@@ -38,13 +38,18 @@ A single-source-of-truth pipeline, extending the existing topology generator:
 |--------|------|-----------|--------|
 | `Baseline` | benign | no fault | ✅ run & validated |
 | `Gptp_Drift_Deep` | gPTP attack | victim `lidarRR` forced constant drift | ✅ run & analysed |
-| `Gptp_Drift_Shallow` | gPTP attack | victim `gnssReceiver` forced drift | defined |
-| `Gptp_Drift_Sweep` | gPTP attack | drift sweep 500/2000/5000/10000 ppm | defined |
-| `Gptp_Drift_Timed` | gPTP attack | clean window then drift at t=1 s (ScenarioManager) | defined |
+| `Gptp_Drift_Shallow` | gPTP attack | victim `gnssReceiver` forced drift | ✅ run |
+| `Gptp_Drift_Sweep` | gPTP attack | drift sweep 500/2000/5000/10000 ppm | ✅ run (4 runs) |
+| `Gptp_Drift_Timed` | gPTP attack | clean window then drift at t=1 s (ScenarioManager) | ⚠️ not runnable (see 4.5) |
 | `Frer_Enabled` | benign (FRER on) | redundant `brakeECU→centralCompute` stream | ✅ run & validated |
-| `Frer_PathCut` | FRER attack | crash `swFR` to cut one redundant path | defined |
-| `Frer_DuplicateFlood` | FRER attack | rogue node floods duplicate-like traffic | defined |
-| `Frer_Plus_GptpDrift` | combined | gPTP drift on a FRER-path node | defined |
+| `Frer_PathCut` | FRER attack | crash `swFR` to cut one redundant path | ✅ run & analysed |
+| `Frer_DuplicateFlood` | FRER attack (port flood) | rogue node floods the protected port | ✅ run & analysed |
+| `Frer_Plus_GptpDrift` | combined | gPTP drift on a FRER-path node | ✅ run |
+
+All runs are 2 s and complete in ~2–7 s wall-clock. Eight of nine configs run
+successfully (the sweep expanding to four); one is blocked by an INET limitation (§4.5).
+`run_experiments.py --all` executes the batch and writes `results/manifest.json`
+labelling each run for the feature-extraction stage.
 
 ---
 
@@ -100,7 +105,49 @@ With FRER enabled, the full 802.1CB pipeline instantiated correctly (stream iden
 
 The arithmetic closes (24060 = 22060 + 2000), and the 2000 dropped frames are uniformly 1024 B — i.e. exactly the `brakeECU` protected stream. The destination received its 2000 frames intact over two disjoint ring paths.
 
-**Implication for the IDS:** `swC.streamRelay.merger.droppedPacketLengths` is a dual-purpose signal — it holds steady (~2000) when redundancy masks a path failure, and should spike under a duplicate-injection flood. Its benign value is now characterised.
+**Implication for the IDS:** `swC.streamRelay.merger.droppedPacketLengths` is a direct FRER-health signal. Its benign value (~2000, = protected-stream rate) is now characterised, and the two FRER attacks move it in opposite directions (§4.4).
+
+### 4.4 FRER attacks — two distinct, opposite fingerprints
+
+Two attacks were run against the FRER-protected `brakeECU → centralCompute` stream. They produce opposite signatures, and neither is visible in simple packet-loss monitoring:
+
+**(a) Path-cut** — `swFR` crashed t=1 s, restarted t=1.5 s (one redundant path down for 0.5 s):
+
+| Metric | Clean FRER | Path cut |
+|---|---|---|
+| Delivery at sink (`app[0]`) | 2000 | **2000** (no loss) |
+| Duplicates eliminated at `swC` | 2000 | **1500** |
+
+Delivery survived the outage completely — FRER masked the single-path failure. The eliminated-duplicate count fell by exactly **500**, which matches the outage precisely: 0.5 s × 1000 frames/s (the 1 ms brake stream) = 500 frames that had no duplicate to eliminate while one path was down. *Signature: service maintained, redundancy consumed.*
+
+**(b) Port flood** — rogue node `radarFL` sends to the protected port at 5× the stream rate:
+
+| Metric | Clean FRER | Port flood |
+|---|---|---|
+| Delivery at sink (`app[0]`) | 2000 | **12000** |
+| Duplicates eliminated at `swC` | 2000 | **2000** (unchanged) |
+
+The flood did **not** affect the elimination counter — the 2000 genuine brake duplicates were still the only frames dropped (all 1024 B). Instead the flood frames passed straight through to the application (2000 → 12000 received). *Signature: application-layer overload, FRER mechanism untouched.*
+
+This is an important mechanistic finding: FRER's elimination keys on **stream identity + sequence number**, not destination port, so a same-port flood does not match the protected stream and bypasses elimination entirely, landing as application overload. A true 802.1CB **sequence-number replay** (which *would* fool elimination) requires tampering inside the sequence-encoding module — i.e. the C++ attack on the roadmap. The config-level flood empirically demonstrates *why* the C++ attack is needed.
+
+**FRER signal summary:**
+
+| Scenario | `swC` eliminations | `app[0]` delivery | Detection layer |
+|---|---|---|---|
+| Frer_Enabled (benign) | 2000 | 2000 | — |
+| Frer_PathCut | **1500** ↓ | 2000 | FRER mechanism |
+| Frer_DuplicateFlood (port flood) | 2000 (unchanged) | **12000** ↑ | application / rate |
+
+### 4.5 Limitation: config-level *timed* drift is not possible
+
+The `Gptp_Drift_Timed` scenario (clean window, then drift injected at t=1 s via ScenarioManager `set-param`) fails at runtime: INET's oscillator `driftRate` is **not marked mutable**, so it cannot be changed mid-simulation (`Setting the parameter is not allowed at runtime`). The clean window runs correctly; the error occurs the instant the parameter change is attempted.
+
+This is not a setup error but an INET design constraint. Time-varying drift — the attack class that would genuinely defeat the gPTP servo's steady-state tracking — therefore requires the protocol-level C++ attack rather than configuration alone. Within the current config-only scope, severity variation is already provided by `Gptp_Drift_Sweep`, and a working timed clean→attack→recovery window is provided by `Frer_PathCut`.
+
+### 4.6 gPTP severity sweep
+
+The drift sweep (500 / 2000 / 5000 / 10000 ppm on `lidarRR`) expands into four runs and shows the `gmRateRatio` deviation scaling monotonically with attack magnitude — the rate-ratio displacement is approximately the drift itself (e.g. 2000 ppm → ratio ≈ 0.9980). This gives a graded-severity axis for training and a single figure demonstrating dose-response of the primary detection feature.
 
 ---
 
@@ -110,22 +157,25 @@ The arithmetic closes (24060 = 22060 + 2000), and the 2000 dropped frames are un
 |---|---|---|---|
 | gPTP drift | `gmRateRatio` (per node) | ≈ 1.0 | persistent offset (≈ 1 − drift) |
 | gPTP drift | underlying-clock offset | small, bounded | grows with drift |
-| FRER | `swC …merger.droppedPacketLengths` | ~2000 (= protected stream rate) | rises under flood / changes under path cut |
+| FRER (path cut) | `swC …merger.droppedPacketLengths` | ~2000 (= protected stream rate) | **falls** during path outage (redundancy consumed) |
+| FRER (port flood) | per-flow `packetReceived:count` at sink | matches flow rate | **rises** (application overload) |
 | Delivery (all) | per-flow `packetReceived:count` | matches flow rate | drops if deadlines missed |
+
+**Cross-cutting theme:** in both attack families the attack is invisible to the naïve metric (clock time; packet loss) and visible in the protocol-mechanism metric (gPTP rate ratio; FRER elimination count). This directly motivates the IDS feature set.
 
 ---
 
 ## 6. Limitations / honest notes
 
-- Three attack scenarios (`Gptp_Drift_Deep`, `Frer_Enabled`) and the baseline are **run and analysed**; the remaining configs are **defined and ready** but not yet executed.
-- A **constant** drift is the easiest case for gPTP to compensate; time-varying drift (the `Gptp_Drift_Timed` config) is expected to stress the servo harder and is a planned follow-up.
-- Attacks so far are **configuration-level** (oscillator / traffic manipulation). Protocol-level C++ attacks (gPTP message tampering via a `Gptp` subclass; 802.1CB sequence-number manipulation) are the planned research-grade extension.
+- Eight of nine scenarios (incl. a 4-level sweep) are **run and analysed**; one (`Gptp_Drift_Timed`) is **blocked by an INET constraint** — oscillator `driftRate` is immutable at runtime (§4.5).
+- A **constant** drift is the easiest case for gPTP to compensate; time-varying drift would stress the servo harder but requires the protocol-level C++ attack, not configuration alone.
+- Attacks so far are **configuration-level** (oscillator / traffic manipulation). Protocol-level C++ attacks (gPTP message tampering via a `Gptp` subclass; 802.1CB sequence-number replay) are the planned research-grade extension — and §4.4 gives empirical justification for why they are necessary.
 - Results are from single runs; repeated seeds are needed for variance before training.
 
 ---
 
 ## 7. Next steps
 
-1. Run the remaining scenarios (`Gptp_Drift_Sweep`, `Gptp_Drift_Timed`, `Frer_PathCut`, `Frer_DuplicateFlood`, `Frer_Plus_GptpDrift`), e.g. via `run_experiments.py --all`.
-2. Build the feature-extraction script: parse the recorded vectors, window them, and label rows from `manifest.json` into per-zone datasets (one per zonal controller = one federated client).
-3. Extend to protocol-level (C++) attacks for higher fidelity.
+1. **Feature extraction:** parse the recorded vectors, window them, and label rows from `manifest.json` into per-zone datasets (one per zonal controller = one federated client). *(immediate next step)*
+2. Add repeated seeds per scenario for variance.
+3. Extend to protocol-level (C++) attacks for higher fidelity — gPTP message/correction-field tampering and 802.1CB sequence-number replay.
