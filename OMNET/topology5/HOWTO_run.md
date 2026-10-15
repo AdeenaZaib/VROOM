@@ -49,6 +49,10 @@ opp_run_release -u Cmdenv -c Gptp_Drift_Deep \
 opp_run_release -u Cmdenv -c Frer_Enabled \
   -n .:$INET/src -l $INET/src/INET --cmdenv-log-level=warn attacks.ini
 ```
+# GPTP delay asymmetric attack
+opp_run_release -u Cmdenv -c Gptp_Delay_Uplink \
+  -n .:$INET/src -l $INET/src/INET --cmdenv-log-level=warn attacks.ini
+
 
 A run is done when it prints `Simulation time limit reached -- at t=2s`.
 Results land in `results/<Config>-#0.sca` (scalars) and `.vec` (vectors).
