@@ -1,13 +1,15 @@
 \chapter*{Executive Summary}
 \addcontentsline{toc}{chapter}{Executive Summary}
-\textbf{Problem.} Zonal automotive architectures converge previously isolated
-domains onto one TSN Ethernet backbone. Isolation that was formerly physical is
-now logical, enforced by time-aware scheduling that depends on a shared time base
-distributed by gPTP. gPTP carries no authentication, and a class of attacks against
-it, notably asymmetric delay injection, is not addressed by cryptographic
-countermeasures, because delaying an authentic message is as effective as forging
-one. The resulting anomalies are invisible to intrusion detection built on payload
-inspection or traffic-volume statistics.
+\textbf{Problem.} Modern automotive systems increasingly use a shared TSN
+Ethernet backbone to connect vehicle components that were previously separated
+into individual domains. As a result, isolation that was once provided by 
+separate physical networks now relies on mechanisms such as time-aware scheduling, 
+which depends on a common time base distributed by gPTP. However, gPTP does not 
+provide authentication, leaving it vulnerable to attacks such as asymmetric delay 
+injection. Cryptographic measures alone cannot prevent these attacks, as delaying 
+a message can be as effective as forging one. Consequently, intrusion detection 
+systems based on payload inspection or traffic statistics may fail to detect these 
+timing-related attacks.
 
 \textbf{Gap.} Existing work divides into three groups, none of which covers this
 intersection: industrial federated TSN-IDS work that is not automotive or zonal;
@@ -30,8 +32,8 @@ criterion SC-2 has been completed. The federated layer is designed but not yet
 implemented. One attack class is validated, one is documented as unrealisable under the
 current framework, and one is instrumented but not yet extracted.
 
-\textbf{Principal risk.} All zones currently carry identical traffic profiles, which
-would make the federated comparison null by construction; differentiated per-zone
+\textbf{Principal risk.} All zones currently carry identical traffic, which
+would make the federated comparison ineffective; differentiated per-zone
 profiles are scheduled first in Iteration~04. A secondary concern is that the injected
 attack is large relative to the benign steady-state envelope, so an attack-intensity
 sweep is required to establish where detection degrades.
