@@ -1,4 +1,5 @@
 \chapter{Remaining FYP Plan}
+\label{ch:plan}
 % ============================================================
 
 \section{Remaining Scope}
@@ -12,6 +13,7 @@ and attack injection) and M3 (feature extraction); plus corrective work on M2 an
 (DEF-01, DEF-02).
 
 \section{Remaining Iterations}
+\label{sec:remaining-iterations}
 
 \textbf{Iteration 03: Detection and decision gate. Complete.}
 The cross-zone sibling residual was added, a centralized detector trained, and the
@@ -27,10 +29,10 @@ against the benign envelope. Introduce differentiated per-zone traffic profiles
 
 \textbf{Iteration 03c: Redundant topology and FRER.}
 The topology half of this iteration is complete in design: the five-zone ring
-(Section~5.5) is generated and passes its structural checks, including the
+(Section~\ref{sec:ref-topology}) is generated and passes its structural checks, including the
 single-link-cut partition test that establishes disjoint paths. What remains is to run
 the benign baseline on it and record the four behavioural checks listed in
-Section~5.5.6, then configure IEEE 802.1CB sequence generation at the talkers and
+Section~\ref{sec:topology-validation}, then configure IEEE 802.1CB sequence generation at the talkers and
 sequence recovery at the listeners for the redundant streams. Implement
 stream-redundancy manipulation as a third attack class: selective suppression or
 delay of one member of a replicated stream in a single target zone. Add the FRER
@@ -45,7 +47,7 @@ than of the synchronisation plane alone. This iteration is independent of
 Iteration~03b and may run in parallel, since it touches the topology and the feature
 extractor rather than the detector. Migrating the gPTP attack configurations from the
 four-zone tree to the five-zone ring is a prerequisite for both, and is the point at
-which the Chapter~7 results are re-established on the reference topology.
+which the Chapter~\ref{ch:testing} results are re-established on the reference topology.
 
 \textbf{Iteration 04: Federation and evaluation.}
 Federated client/server implementation; local-only, centralized-pooled and FedAvg
@@ -63,6 +65,7 @@ residuals. Iteration 04 proceeds in order: local-only
 baseline, centralized upper bound, FedAvg, then the remaining evaluation dimensions.
 
 \section{Testing and Validation Plan}
+\label{sec:validation-plan}
 
 \begin{longtable}{p{0.28\textwidth} p{0.66\textwidth}}
 \toprule
@@ -88,10 +91,11 @@ configurations \\
 \end{longtable}
 
 Accuracy is excluded as a headline measure throughout, owing to the class imbalance
-reported in Section~7.4. Train/test separation is performed at run and seed
+reported in Section~\ref{sec:test-results}. Train/test separation is performed at run and seed
 granularity (integrity rule R3).
 
 \section{Deployment Plan}
+\label{sec:deployment-plan}
 The deliverable is a reproducible research and validation environment: pinned
 dependencies, documented commands, sample configurations, seeds, and exported
 results, executable by a non-author on a clean environment.
@@ -132,7 +136,7 @@ measured rather than assumed \\
 03c &
 Benign baseline run on the ring topology; 802.1CB sequence generation and recovery;
 redundancy attack injection; FRER feature family &
-The four behavioural criteria of Section~5.5.6 are met, and FRER residuals reach
+The four behavioural criteria of Section~\ref{sec:topology-validation} are met, and FRER residuals reach
 macro-F1 $> 0.90$ while the matching within-zone features remain at chance \\
 \addlinespace
 04 &

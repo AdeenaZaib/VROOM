@@ -1,7 +1,9 @@
 \chapter{System Design}
+\label{ch:design}
 % ============================================================
 
 \section{System Architecture}
+\label{sec:architecture}
 
 The system is organised into five layers with explicit interface contracts between
 them. Layer separation is deliberate: the simulation layer is replaceable by captured
@@ -37,6 +39,7 @@ model, without either change propagating beyond its own interface.
 \end{figure}
 
 \section{Architectural Components}
+\label{sec:components}
 
 \begin{longtable}{p{0.18\textwidth} p{0.24\textwidth} p{0.5\textwidth}}
 \toprule
@@ -60,6 +63,7 @@ Incident queue & L5 & Operator-facing triage surface \\
 \end{longtable}
 
 \section{Interfaces and Dependencies}
+\label{sec:interfaces}
 
 \begin{longtable}{p{0.08\textwidth} p{0.26\textwidth} p{0.58\textwidth}}
 \toprule
@@ -90,9 +94,10 @@ are explicitly excluded from this interface (NFR-07) \\
 \textbf{External dependencies.} OMNeT++ 6.4.0 (simulation kernel, Qtenv/Cmdenv),
 INET 4.7.0 (TSN and gPTP modules), Python 3 with scientific stack for extraction and
 training, and a federated learning framework for the aggregation layer. Versions are
-pinned in Section~8.8.
+pinned in Section~\ref{sec:dependencies}.
 
 \section{Architecture Decisions and Rationale}
+\label{sec:arch-decisions}
 
 \begin{longtable}{p{0.06\textwidth} p{0.26\textwidth} p{0.26\textwidth} p{0.34\textwidth}}
 \caption{Architecture decision record}\\
@@ -152,15 +157,16 @@ schema &
 Relational database with entity-relationship model &
 The data is a single homogeneous observation table with no multi-entity relational
 structure. A relational model would add no referential integrity benefit and would
-not reflect the domain. Section~5.7 therefore specifies a column contract rather than
+not reflect the domain. Section~\ref{sec:data-design} therefore specifies a column contract rather than
 an ERD. \\
 \bottomrule
 \end{longtable}
 
 \section{Reference Topology Design}
+\label{sec:ref-topology}
 
-The Iteration~1 results reported in Chapter~7 were produced on a four-zone tree
-topology, described in Section~6.6 and retained as \texttt{topology\_basic}. That
+The Iteration~1 results reported in Chapter~\ref{ch:testing} were produced on a four-zone tree
+topology, described in Section~\ref{sec:technical-details} and retained as \texttt{topology\_basic}. That
 topology was built to be minimal: it was enough to instrument gPTP, inject delay
 attacks and test the cross-zone residual claim, and deliberately no more. It has two
 properties that bound what can be asked of it. Each zone reaches the backbone over a
@@ -258,7 +264,7 @@ The network description (\texttt{.ned}), the simulation configuration
 table of devices, link speeds and link lengths (\texttt{gen\_topology.py}). Editing the
 table and re-running the generator regenerates both simulator files, so the model
 cannot drift out of step with its own specification, and the generation step runs in
-the project's continuous integration pipeline (Section~8.5).
+the project's continuous integration pipeline (Section~\ref{sec:repository}).
 
 \begin{figure}[htbp]
 \centering
@@ -275,6 +281,7 @@ compute unit are attached to \texttt{swC}.}\label{fig:topology5}
 \end{figure}
 
 \subsection{Validation}
+\label{sec:topology-validation}
 The topology is checked at three levels.
 
 \textbf{Structural, automated.} The generator verifies that the graph is connected,
@@ -290,7 +297,7 @@ from infotainment. Each placement is justified by a source or a stated reason.
 
 \textbf{Network behaviour, simulation.} The third level is specified here as the
 acceptance criteria for the benign baseline run, which is the first task of
-Iteration~03c (Section~9.3). The topology is accepted as behaviourally sound when all
+Iteration~03c (Section~\ref{sec:remaining-iterations}). The topology is accepted as behaviourally sound when all
 time-triggered flows meet their deadlines, link utilisation stays below approximately
 70\%, gPTP converges within the target bound, and FRER flows survive a cut ring link.
 Stating these criteria before the run is deliberate: it fixes what counts as a
@@ -342,15 +349,15 @@ Attack classes & Sync manipulation and delay injection $\rightarrow$ delay injec
 sync starvation, drift (evaluated and excluded) &
 Sync starvation is a concrete realisation of synchronisation manipulation. Drift
 manipulation was implemented and empirically found not to produce a zone-localisable
-signature (Section~7.6); it is retained in the report as a documented negative
+signature (Section~\ref{sec:edge-cases}); it is retained in the report as a documented negative
 result rather than as a detection target. \\
 \addlinespace
 Reference topology & Four-zone tree $\rightarrow$ five-zone ring with dual-homed
 centre &
 The tree was minimal by design and sufficient to test the residual claim, but it
 offers one path per zone and so cannot carry FRER. The ring gives every zone two
-link-disjoint routes to the centre. Specified in Section~5.5; Iteration~1 results in
-Chapter~7 remain those of the tree. \\
+link-disjoint routes to the centre. Specified in Section~\ref{sec:ref-topology}; Iteration~1 results in
+Chapter~\ref{ch:testing} remain those of the tree. \\
 \addlinespace
 Federated client count & Four $\rightarrow$ five &
 Follows the reference topology, which has five zones rather than four. The client
@@ -361,15 +368,16 @@ Added to the attack surface after the proposal, to test whether the cross-zone
 residual principle generalises beyond the synchronisation plane. Blocked on a single
 dependency, the absence of disjoint paths in the Iteration~1 tree, which the
 five-zone ring topology now resolves. The 802.1CB configuration and feature family
-are scheduled in Section~9.3. \\
+are scheduled in Section~\ref{sec:remaining-iterations}. \\
 \addlinespace
 Team composition & Three-member ownership model $\rightarrow$ two members &
-Responsibilities reallocated across two members (Section~3.6); each member retains a
+Responsibilities reallocated across two members (Section~\ref{sec:workbreakdown}); each member retains a
 distinct primary implementation area. \\
 \bottomrule
 \end{longtable}
 
 \section{Domain Model}
+\label{sec:domain-model}
 
 The domain is described by seven concepts. The synchronisation tree structure is
 central: the sibling relationship between zones at the same depth is what makes the
@@ -408,6 +416,7 @@ within the synchronisation tree, on which the residual feature depends.}
 \end{figure}
 
 \section{Data Design}
+\label{sec:data-design}
 
 The system does not use a relational database. Its persistent data is a single
 homogeneous observation table together with run metadata, so the data design is
@@ -482,6 +491,7 @@ formed at run and seed granularity, never at window granularity, because the ext
 stride is shorter than the window length and adjacent windows therefore overlap.
 
 \section{Process / Behavior Design}
+\label{sec:process-design}
 
 \subsection*{Data flow}
 

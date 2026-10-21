@@ -18,7 +18,7 @@ driven by real model output; rule-based fallback.
 
 \section{Individual Responsibilities}
 Responsibilities follow the allocation in Table~\ref{tab:workbreakdown}
-(Section~3.6). The split is by area rather than by task, so that each member owns a
+(Section~\ref{sec:workbreakdown}). The split is by area rather than by task, so that each member owns a
 coherent part of the system end to end and can explain it independently. Adeena Zaib
 owns the simulation and data-generation path: the OMNeT++/INET topology, the attack
 scenarios, and the per-zone dataset packaging that feeds the federated clients.
@@ -27,7 +27,7 @@ federated client and server implementation.
 
 \section{Contribution of Each Team Member}
 The artefacts produced in this reporting period are listed below against their owner.
-Each is verifiable against the commit history in Appendix~D rather than asserted here.
+Each is verifiable against the commit history in Appendix~\ref{app:repository} rather than asserted here.
 
 \textbf{Khaula Bilqees.} The OMNeT++/INET zonal topology and its scenario
 configurations, committed as \texttt{8b765f6}; and the subsequent topology and
@@ -42,7 +42,7 @@ The commit record shows seven commits, four from the first author and three from
 second, with both members committing under their own accounts throughout.
 
 \textbf{Divergence from the planned allocation.} Table~\ref{tab:workbreakdown} in
-Section~3.6 allocates the topology to the first author and the signal instrumentation
+Section~\ref{sec:workbreakdown} allocates the topology to the first author and the signal instrumentation
 to the second. In practice these two areas were exchanged during Iteration~1: the
 topology was implemented by the second author and the extraction pipeline by the
 first. The allocation of the remaining areas is unchanged, and the federated client
@@ -51,14 +51,15 @@ This is recorded rather than quietly corrected, because the commit history is th
 evidence for this section and it should agree with the text.
 
 \section{Repository and Version Control Evidence}
+\label{sec:repository}
 The project is held in a Git repository with both members committing under their own
 accounts. Continuous integration is configured through GitHub Actions: a workflow runs
-on every push and executes the automated test suite described in Section~7.2, so a
+on every push and executes the automated test suite described in Section~\ref{sec:testing-levels}, so a
 change that breaks the feature extraction or training pipeline is caught at the point
 it is pushed rather than at the next manual run.
 
 The repository is at \url{https://github.com/AdeenaZaib/VROOM}. The commit log and
-the per-member commit counts are reproduced in Appendix~D.
+the per-member commit counts are reproduced in Appendix~\ref{app:repository}.
 
 \begin{figure}[htbp]
 \centering
@@ -83,7 +84,7 @@ The automated suite is itself the milestone evidence for modules M2 and M3. It
 contains fourteen tests, of which three are dataset invariants that run only when
 \texttt{features.csv} is present and are therefore exercising the real extracted
 dataset rather than synthetic fixtures. Three of those tests encode the corrections
-recorded as defects in Section~7.7: that attack labels are confined to the target
+recorded as defects in Section~\ref{sec:defects}: that attack labels are confined to the target
 zone (DEF-01), that the cross-zone residual is not identically zero, and that the
 victim zone rotates across runs so that the detector cannot memorise a single zone.
 
@@ -103,13 +104,13 @@ victim zone rotates across runs so that the detector cannot memorise a single zo
 \texttt{CarazoneZonalNetwork.ned}; Figure~\ref{fig:topology} \\
 \addlinespace
 \texttt{856beba} & M3 complete: feature extraction, including the cross-zone residual &
-\texttt{extract\_features.py}; ablation in Section~7.5 \\
+\texttt{extract\_features.py}; ablation in Section~\ref{sec:acceptance-validation} \\
 \addlinespace
 \texttt{ed4b0f6} & Continuous integration established &
 First workflow run; failed, and corrected in the next commit \\
 \addlinespace
 \texttt{2168990} & Automated test suite covering M2 and M3 &
-Fourteen tests; three encode the DEF-01 correction (Appendix~C) \\
+Fourteen tests; three encode the DEF-01 correction (Appendix~\ref{app:test-cases}) \\
 \addlinespace
 \texttt{31cb803}, \texttt{f009ac6} & Topology and configuration revisions &
 Passing workflow runs \#3 and \#4 \\
@@ -146,6 +147,7 @@ generated. \\
 % and ensure both members can explain any section they did not personally draft.
 
 \section{External Components and Dependencies}
+\label{sec:dependencies}
 
 \begin{longtable}{p{0.2\textwidth} p{0.14\textwidth} p{0.2\textwidth} p{0.36\textwidth}}
 \toprule
@@ -217,6 +219,7 @@ and model-poisoning resistance are outside committed scope and are stated as
 limitations rather than claimed properties.
 
 \section{Current Limitations}
+\label{sec:limitations}
 \begin{enumerate}
   \item Detection results are centralized only; no federated result is claimed.
   \item Zones are currently symmetric, so federated behaviour cannot yet be assessed.

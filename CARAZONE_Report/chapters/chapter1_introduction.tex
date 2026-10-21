@@ -31,6 +31,7 @@ approaches that observe payload content or flow statistics have no visibility of
 this failure mode.
 
 \section{Problem Context and Motivation}
+\label{sec:problem-context}
 Automotive E/E architecture is migrating from roughly 70--100 distributed ECUs on
 segmented buses toward a small number of zone controllers linked by a high-bandwidth
 Ethernet backbone. TSN provides the determinism that the displaced buses supplied
@@ -79,6 +80,7 @@ Objectives O1--O3 are complete at the mid-report stage. O4--O6 are scheduled for
 Iterations~03 and~04.
 
 \section{Project Scope}
+\label{sec:scope}
 
 \subsection*{Scope statement}
 The project targets the TSN Ethernet backbone connecting zone controllers to central
@@ -128,7 +130,7 @@ development. It is not yet exercised in the dataset because the
 four-zone tree topology used for Iteration~1 gives each zone a single path to the
 backbone, and FRER requires disjoint redundant paths between talker and listener.
 That blocking dependency has since been removed. A five-zone ring reference topology
-has been designed, generated and structurally validated (Section~5.5); its automated
+has been designed, generated and structurally validated (Section~\ref{sec:ref-topology}); its automated
 check confirms that cutting any single ring or uplink link partitions nothing, which
 is the machine-checkable form of the disjoint-path requirement. The remaining work is
 therefore bounded and specified: configuring the 802.1CB sequence generation and
@@ -142,7 +144,7 @@ frame remains individually authentic. This family is attractive for the project'
 central claim because its features are structurally independent of the gPTP offset
 residuals, so it tests whether the cross-zone residual principle generalises beyond
 the synchronisation plane. Scheduling and the exit criterion are given in
-Section~9.3. The topology dependency, previously the single blocker, is resolved in
+Section~\ref{sec:remaining-iterations}. The topology dependency, previously the single blocker, is resolved in
 design and awaits a baseline simulation run.
 
 \textbf{Schedule-window (802.1Qbv) violation detection (deferred).} TAS gate scheduling is not
@@ -190,6 +192,7 @@ presents them through an operator-facing incident queue. \\
 Modules M1--M3 are implemented. M4--M6 are designed and scheduled.
 
 \section{Stakeholders and User Classes}
+\label{sec:stakeholders}
 
 \begin{longtable}{p{0.24\textwidth} p{0.34\textwidth} p{0.34\textwidth}}
 \toprule
@@ -225,9 +228,10 @@ unit. In this project the entire system is exercised in simulation on a developm
 workstation; no claim of in-vehicle deployment is made.
 
 \section{Success Criteria}
+\label{sec:success-criteria}
 
 Success is assessed against measurable criteria rather than a single aggregate
-accuracy figure. Class imbalance in the generated data (see Section~7.4) makes
+accuracy figure. Class imbalance in the generated data (see Section~\ref{sec:test-results}) makes
 accuracy uninformative, so it is excluded as a headline measure.
 
 \begin{longtable}{p{0.06\textwidth} p{0.34\textwidth} p{0.52\textwidth}}
@@ -243,12 +247,12 @@ SC-2 & Cross-zone features outperform within-zone features &
 Identical model trained on (a) cross-zone residual and (b) within-zone statistics over
 identical run-level splits; macro-F1 of (a) exceeds (b) by a margin that holds across
 seeds and across models. \textbf{Met}: $+0.43$ to $+0.49$ macro-F1 over three models
-(Section~7.5). \\
+(Section~\ref{sec:acceptance-validation}). \\
 \addlinespace
 SC-3 & Detection is operationally timely &
 Detection latency, reported in synchronisation intervals from attack onset.
 \textbf{Partially met}: two intervals under a three-window confirmation rule
-(Section~7.5). Comparison against a schedule margin awaits time-aware shaping. \\
+(Section~\ref{sec:acceptance-validation}). Comparison against a schedule margin awaits time-aware shaping. \\
 \addlinespace
 SC-4 & Federated training is justified &
 FedAvg macro-F1 exceeds local-only training, and the gap to centralized-pooled
@@ -268,6 +272,7 @@ ground-truth labels on a clean environment. \\
 \end{longtable}
 
 \section{Constraints and Assumptions}
+\label{sec:assumptions}
 
 \subsection*{Constraints}
 \begin{itemize}
@@ -301,7 +306,7 @@ ground-truth labels on a clean environment. \\
   \item \textbf{A3.} The grandmaster is statically assigned and trusted. Attacks
         originate from a compromised on-path node within a zone, not from the time
         source itself. Grandmaster-level compromise is addressed as a scope boundary
-        in Section~2.7.
+        in Section~\ref{sec:technical-challenges}.
   \item \textbf{A4.} The aggregation server (central vehicle compute) is trusted.
         Secure aggregation and model-poisoning resistance are out of scope.
   \item \textbf{A5.} Monitoring is passive and sits outside the forwarding path.
@@ -316,7 +321,7 @@ is developed against any real or deployed system.
 
 \textbf{Legal.} No proprietary OEM communication matrices or topology data are used.
 OMNeT++ and INET are used under their respective open-source licences, which are
-recorded in the dependency register (Section~8.8). Published datasets, if
+recorded in the dependency register (Section~\ref{sec:dependencies}). Published datasets, if
 incorporated for validation, will be used under their stated academic-use terms with
 required citation.
 

@@ -2,6 +2,7 @@
 % ============================================================
 
 \section{Proposal Feedback Summary}
+\label{sec:feedback-summary}
 
 The proposal defence panel returned six comments. Two concerns were each raised
 twice, which the team treated as indicating priority.
@@ -25,6 +26,7 @@ The panel's overall assessment recorded the project as a good niche project with
 good direction, subject to the above.
 
 \section{Proposal Action Register}
+\label{sec:action-register}
 
 \begin{longtable}{p{0.04\textwidth} p{0.22\textwidth} p{0.34\textwidth} p{0.10\textwidth} p{0.20\textwidth}}
 \caption{Proposal action register}\\
@@ -43,7 +45,7 @@ runs, and a feature extraction pipeline producing 4{,}740 labelled windows. The
 operator-facing surface is now explicitly labelled as a presentation mock-up and is no
 longer presented as the proof of concept. &
 Addressed &
-Ch.~6; Fig.~\ref{fig:topology}; Sec.~6.9; Sec.~7.4 \\
+Ch.~\ref{ch:iteration1}; Fig.~\ref{fig:topology}; Sec.~\ref{sec:demo-evidence}; Sec.~\ref{sec:test-results} \\
 \addlinespace
 2 & Evaluation matrix requires greater precision &
 Replaced the three-row metric summary with a full evaluation specification: per-class
@@ -52,7 +54,7 @@ vehicle-hour, worst-client macro-F1, centralized-to-FedAvg gap, convergence roun
 update volume, and zone-attribution top-1 accuracy reported separately from detection.
 Accuracy removed as a headline measure, with class-imbalance justification. &
 Addressed &
-Sec.~1.9; Sec.~7.1; Sec.~9.5 \\
+Sec.~\ref{sec:success-criteria}; Sec.~\ref{sec:testing-strategy}; Sec.~\ref{sec:validation-plan} \\
 \addlinespace
 3 & Unable to explain static vs.\ dynamic environment &
 Both senses are now stated explicitly as load-bearing assumptions: the network
@@ -61,7 +63,7 @@ continuous (A2). The dependence of the detection approach on a statically known
 expected value is stated, and dynamic reconfiguration is recorded as an explicit
 limitation. &
 Addressed &
-Sec.~1.10 (A1, A2); Sec.~5.4; Sec.~8.11 \\
+Sec.~\ref{sec:assumptions} (A1, A2); Sec.~\ref{sec:arch-decisions}; Sec.~\ref{sec:limitations} \\
 \addlinespace
 4 & More in-depth background study required &
 Literature review extended beyond the five sources presented at defence, recorded
@@ -69,7 +71,7 @@ against methodology, results, limitations and resulting design decision; a
 research-to-decision table now links each finding to a concrete design choice; a
 comparison against the departmental FYP repository was added. &
 Addressed &
-Sec.~2.1--2.4; Sec.~2.8; Table~\ref{tab:dims} \\
+Sec.~\ref{sec:research-method}--\ref{sec:limitations-gaps}; Sec.~\ref{sec:research-findings}; Table~\ref{tab:dims} \\
 \addlinespace
 5 & Better simulators; add-on applications where outcomes can be utilised &
 Simulation framework and version justified against alternatives in an architecture
@@ -77,14 +79,14 @@ decision record. Consumption of detector output defined concretely: the vSOC inc
 queue, and the in-vehicle integrity decision consumed by fault-tolerant timing
 failover. &
 Partially addressed &
-Sec.~5.4; Sec.~1.8; Sec.~9.6 \\
+Sec.~\ref{sec:arch-decisions}; Sec.~\ref{sec:stakeholders}; Sec.~\ref{sec:deployment-plan} \\
 \addlinespace
 6 & Application perspective needs to be stronger &
 Added deployment positioning (zone controller and central vehicle compute), the
 consuming stakeholders and their required evidence, and the deployment plan
 identifying what the detector's output drives. &
 Partially addressed &
-Sec.~1.3; Sec.~1.8; Sec.~9.6 \\
+Sec.~\ref{sec:problem-context}; Sec.~\ref{sec:stakeholders}; Sec.~\ref{sec:deployment-plan} \\
 \bottomrule
 \end{longtable}
 
@@ -94,6 +96,7 @@ Sec.~1.3; Sec.~1.8; Sec.~9.6 \\
 % before the evaluation, upgrade them.
 
 \section{Iteration Strategy}
+\label{sec:iteration-strategy}
 
 Development follows four time-boxed iterations, each ending in a demonstrable
 artefact rather than a document. The ordering is deliberately
@@ -105,6 +108,7 @@ federated infrastructure is built, so that a null feature result is discovered b
 it is built upon.
 
 \section{Iteration 1 Plan}
+\label{sec:iter1}
 
 \textbf{Objective.} Establish a reproducible simulation environment in which TSN
 timing attacks produce measurable, repeatable effects.
@@ -122,6 +126,7 @@ timing attacks produce measurable, repeatable effects.
 \end{itemize}
 
 \section{Iteration 2 Plan}
+\label{sec:iter2}
 
 \textbf{Objective.} Convert raw simulation output into a labelled, windowed,
 protocol-native feature dataset.
@@ -136,10 +141,11 @@ protocol-native feature dataset.
         seed.
   \item \textbf{Status: complete.} Labelling is correctly attributed to the victim
         zone only; the target zone is rotated across runs so that every zone appears
-        as both victim and bystander (Section~7.4).
+        as both victim and bystander (Section~\ref{sec:test-results}).
 \end{itemize}
 
 \section{Work Breakdown and Responsibilities}
+\label{sec:workbreakdown}
 
 \begin{longtable}{p{0.2\textwidth} p{0.37\textwidth} p{0.37\textwidth}}
 \caption{Work breakdown by member}\label{tab:workbreakdown}\\
@@ -179,6 +185,7 @@ architecture, not only their primary component. No member's ownership is limited
 documentation, presentation or manual testing.
 
 \section{Progress Against Plan}
+\label{sec:progress}
 
 \begin{longtable}{p{0.16\textwidth} p{0.38\textwidth} p{0.14\textwidth} p{0.24\textwidth}}
 \caption{Planned milestones versus actual progress}\\
@@ -195,12 +202,13 @@ configurations implemented \\
 Iteration 02 & Traffic generation; feature pipeline; labelled per-zone datasets &
 Complete & Cross-zone residual feature outstanding \\
 Iteration 03 & Federated learning pipeline; initial training runs & Not started &
-Preceded by residual feature and zone heterogeneity (Section~3.8) \\
+Preceded by residual feature and zone heterogeneity (Section~\ref{sec:delays}) \\
 Iteration 04 & One-shot federated training; evaluation metrics collected & Not started & n/a \\
 \bottomrule
 \end{longtable}
 
 \section{Delays, Deviations and Recovery Plan}
+\label{sec:delays}
 
 \textbf{D1. Detection model not yet implemented.} The feature dataset is currently the
 end of the implemented pipeline. \emph{Cause:} Iterations 01--02 absorbed more effort
@@ -213,7 +221,7 @@ feature claim (SC-2) is tested before further work depends on it.
 traffic and produce an identical number of feature windows. \emph{Consequence:}
 federated, centralized and local-only training would converge to equivalent models,
 making the federated comparison (SC-4) null by construction. \emph{Recovery:} the
-five-zone reference topology (Section~5.5) builds asymmetry into the structure itself,
+five-zone reference topology (Section~\ref{sec:ref-topology}) builds asymmetry into the structure itself,
 with between three and seven endpoint ECUs per zone and distinct traffic classes by
 zone function, giving quantity, feature and label skew by design. Differentiated
 per-zone traffic profiles and the measurement of the resulting skew remain Iteration~03
@@ -226,7 +234,7 @@ features were timing statistics that a generic detector could also compute, whic
 not support the protocol-native claim SC-2 is designed to test. \emph{Resolution:} the
 extraction loop was restructured so that the observation window is the outer iteration,
 making every zone's controller offset available for the same window, and two residual
-features were added. The ablation in Section~7.5 confirms these carry the detection
+features were added. The ablation in Section~\ref{sec:acceptance-validation} confirms these carry the detection
 signal. \emph{Closed.}
 
 \textbf{D4. Deviations from the approved proposal.} Three deviations are recorded:
@@ -234,10 +242,10 @@ the number of federated clients changed from three to four and then to five, in 
 case following the topology
 design; team composition is two members rather than the three assumed by the
 proposal's ownership model, with responsibilities reallocated accordingly
-(Section~3.6); and the attack surface was broadened to include FRER (IEEE 802.1CB)
+(Section~\ref{sec:workbreakdown}); and the attack surface was broadened to include FRER (IEEE 802.1CB)
 stream-redundancy manipulation alongside gPTP synchronisation attacks, which the
 approved proposal did not name. FRER remains committed scope and is in progress; it
 is not yet represented in the Iteration~1 dataset because it requires a redundant
-topology, and that extension is scheduled in Section~9.3.
+topology, and that extension is scheduled in Section~\ref{sec:remaining-iterations}.
 
 % ============================================================

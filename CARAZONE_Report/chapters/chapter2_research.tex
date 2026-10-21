@@ -1,7 +1,9 @@
 \chapter{Research and Existing Solutions}
+\label{ch:research}
 % ============================================================
 
 \section{Research Method / Approach}
+\label{sec:research-method}
 The literature was investigated in three directions corresponding to the three
 bodies of work the project sits between: (i) federated learning for intrusion
 detection, (ii) automotive in-vehicle network security, and (iii) TSN protocol
@@ -17,7 +19,7 @@ aggregation under non-IID clients, or automotive zonal architecture.
 
 In addition, a comparison was performed against the departmental FYP repository
 (Fall 2019 -- Fall 2025) to establish that the project does not duplicate prior
-student work. The result of that comparison is reported in Section~2.3.
+student work. The result of that comparison is reported in Section~\ref{sec:comparison}.
 
 % [[FILL]] You stated your review is broader than the five papers in the deck.
 % List the additional sources here with the same four fields, then extend Table 2.1.
@@ -73,6 +75,7 @@ unresolved \\
 \end{longtable}
 
 \section{Comparison of Existing Solutions}
+\label{sec:comparison}
 
 Three dimensions are jointly required by this project: federated training, an
 automotive zonal setting, and detection built on TSN protocol-native signals.
@@ -110,6 +113,7 @@ automotive Ethernet; the single automotive in-vehicle network security project
 targets the CAN bus.
 
 \section{Limitations and Gaps}
+\label{sec:limitations-gaps}
 
 The reviewed work exhibits four limitations relevant to this project:
 
@@ -206,6 +210,7 @@ propagates to detection latency, model size and communication volume. \\
 \end{longtable}
 
 \section{Technical Challenges}
+\label{sec:technical-challenges}
 
 \begin{enumerate}
   \item \textbf{Observability of internal protocol state.} Several informative
@@ -220,7 +225,7 @@ propagates to detection latency, model size and communication volume. \\
   \item \textbf{Grandmaster-level blind spot.} Detection based on comparison between
         siblings in the synchronisation tree is, by construction, insensitive to a
         perturbation that moves the entire tree together. This was confirmed
-        empirically (Section~7.6) and is recorded as a scope boundary: the system
+        empirically (Section~\ref{sec:edge-cases}) and is recorded as a scope boundary: the system
         addresses link-local timing integrity, not time-source integrity.
   \item \textbf{Structural client heterogeneity.} For the federated comparison to be
         meaningful, zones must differ in traffic profile. A symmetric topology makes
@@ -233,6 +238,7 @@ propagates to detection latency, model size and communication volume. \\
 \end{enumerate}
 
 \section{Research Findings and Design Decisions}
+\label{sec:research-findings}
 
 \begin{longtable}{p{0.24\textwidth} p{0.34\textwidth} p{0.36\textwidth}}
 \toprule

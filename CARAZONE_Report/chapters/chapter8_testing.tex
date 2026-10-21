@@ -1,7 +1,9 @@
 \chapter{Testing and Early Validation}
+\label{ch:testing}
 % ============================================================
 
 \section{Testing Strategy}
+\label{sec:testing-strategy}
 Testing at this stage targets the data generation path rather than the detection
 model, on the principle that model results obtained from an unverified dataset are
 uninterpretable. Three levels are applied: component checks on extraction logic,
@@ -9,6 +11,7 @@ integration checks on the simulation-to-dataset path, and empirical validation t
 injected attacks produce the theoretically expected signature.
 
 \section{Test Levels and Techniques}
+\label{sec:testing-levels}
 \begin{itemize}
   \item \textbf{Component.} Assertions within the extraction pipeline on window
         counts, absence of missing values, and per-zone label distribution.
@@ -21,6 +24,7 @@ injected attacks produce the theoretically expected signature.
 \end{itemize}
 
 \section{Test Cases}
+\label{sec:test-cases}
 
 \begin{longtable}{p{0.07\textwidth} p{0.3\textwidth} p{0.3\textwidth} p{0.25\textwidth}}
 \caption{Test cases executed at the mid-report stage}\\
@@ -41,19 +45,20 @@ Pass \\
 TC-04 & Delay attack produces measurable deviation & Targeted branch diverges from
 siblings during the attack interval & Pass \\
 TC-05 & Drift attack produces zone-localisable deviation & Targeted zone diverges from
-siblings & \textbf{Not realisable; see 7.6} \\
+siblings & \textbf{Not realisable; see Section~\ref{sec:edge-cases}} \\
 TC-06 & Extraction produces expected window count & Windows $=$ runs $\times$ zones
 $\times$ windows-per-run $= 15 \times 4 \times 79$ & Pass (4{,}740) \\
 TC-07 & Zero-event windows are retained, not dropped & Window with no clock event
 yields a record with \texttt{n\_events}$=0$ & Pass \\
 TC-08 & Attack labels attributed to victim zone only & In an attack run targeting zone
-$z$, only zone $z$ carries the attack label & Pass (see 7.4) \\
+$z$, only zone $z$ carries the attack label & Pass (see Section~\ref{sec:test-results}) \\
 TC-09 & Dataset conforms to the documented schema & Column names, order and types match
-Table~\ref{tab:schema} & Pass (after schema amendment; see 7.7) \\
+Table~\ref{tab:schema} & Pass (after schema amendment; see Section~\ref{sec:defects}) \\
 \bottomrule
 \end{longtable}
 
 \section{Test Results}
+\label{sec:test-results}
 
 Fifteen seeded runs produced 225 recorded vectors, from which the extraction pipeline
 generated 4{,}740 labelled feature windows.
@@ -98,11 +103,12 @@ Accuracy is therefore excluded as a reported measure; evaluation uses per-class
 precision, recall and F1, macro-F1, and detection rate at a fixed false-positive rate.
 
 \section{Acceptance Testing / Validation}
+\label{sec:acceptance-validation}
 
-Acceptance checks defined in Section~4.6 have been exercised for FR-01 through FR-09.
+Acceptance checks defined in Section~\ref{sec:acceptance-criteria} have been exercised for FR-01 through FR-09.
 Checks for FR-10 to FR-15 and NFR-08 require the federation and
 monitoring-interference work scheduled for Iteration~04 and are reported as planned in
-Section~9.5.
+Section~\ref{sec:validation-plan}.
 
 Success criterion SC-2, that protocol-native features outperform features computable
 without knowledge of network structure, has been tested centrally ahead of schedule,
@@ -176,9 +182,9 @@ the small set is also the more accurate one.
 \textbf{Result 4: both residual features are necessary.} That logistic regression, a
 linear decision boundary, reaches 0.951 macro-F1 on two features implies that the
 classes are linearly separable in the two-dimensional residual space. They are not
-separable in the offset dimension alone, as Section~7.6 shows. The drift-slope residual
+separable in the offset dimension alone, as Section~\ref{sec:edge-cases} shows. The drift-slope residual
 is therefore load-bearing despite appearing weak when summarised univariately, and the
-mechanism by which it contributes is recorded in Section~7.6.
+mechanism by which it contributes is recorded in Section~\ref{sec:edge-cases}.
 
 \textbf{Detection latency.} With a confirmation requirement of three consecutive
 anomalous windows, detection fires two windows after attack onset for every
@@ -195,9 +201,10 @@ are misclassified. Logistic regression shows the same structure with nine false
 positives and no false negatives. The error is therefore one-sided towards false alarm
 rather than missed detection, which is the preferable direction for a safety-relevant
 monitor, though it makes the false-alarm rate the quantity requiring most attention at
-deployment scale (Section~9.5).
+deployment scale (Section~\ref{sec:validation-plan}).
 
 \section{Edge and Failure Cases}
+\label{sec:edge-cases}
 
 \textbf{Negative result: oscillator drift manipulation is not realisable as a runtime
 attack under the current simulation framework.} An attack was designed in which the
@@ -294,7 +301,7 @@ the reason a univariate summary understates its contribution, and it is recorded
 because the measurement that reveals it, a linear model succeeding on two features,
 is easily mistaken for an unimportant result.
 
-The practical consequence for FYP-2 is that the attack-intensity sweep (Section~9.5)
+The practical consequence for FYP-2 is that the attack-intensity sweep (Section~\ref{sec:validation-plan})
 must report the benign envelope, separated into convergence and steady-state
 populations, alongside detection rate rather than reporting detection rate alone.
 
@@ -309,9 +316,10 @@ synchronisation domain, and is out of scope.
 
 \textbf{Pending edge cases.} Attack intensities approaching the benign drift envelope,
 unseen seeds, and coordinator or model unavailability are scheduled for Iteration~04
-(Section~9.5).
+(Section~\ref{sec:validation-plan}).
 
 \section{Defects and Corrective Actions}
+\label{sec:defects}
 
 \textbf{DEF-04. Schema drift between the documented column contract and the emitted
 dataset.} Test TC-09 compared the columns of \texttt{features.csv} against the
@@ -323,7 +331,7 @@ have anticipated them, and \texttt{target\_zone} in particular is equivalent to 
 label, so an implementer unaware of it could leak ground truth into a model.
 \emph{Recovery:} the contract in Table~\ref{tab:schema} was corrected to document all
 three, and the leakage risk is additionally guarded by an automated test asserting
-that no identifier column reaches any feature set (Appendix~C). Status:
+that no identifier column reaches any feature set (Appendix~\ref{app:test-cases}). Status:
 \textbf{closed}.
 
 \begin{longtable}{p{0.08\textwidth} p{0.3\textwidth} p{0.26\textwidth} p{0.28\textwidth}}
@@ -341,14 +349,14 @@ computed within a single zone. &
 The features were not structurally exclusive to a deterministic network, so SC-2 could
 not be tested. &
 \texttt{build()} restructured to iterate window-then-zone, and two sibling residual
-features emitted. Verified by the ablation in Section~7.5: within-zone features reach
+features emitted. Verified by the ablation in Section~\ref{sec:acceptance-validation}: within-zone features reach
 0.48--0.54 macro-F1, residual features 0.95--0.98. Status: \textbf{closed}. \\
 \addlinespace
 DEF-02 & All four zones of the Iteration~1 topology carry identical traffic profiles
 and produce identical window counts. &
 Federated, centralized and local-only training would converge to equivalent models,
 making the federated comparison (SC-4) null by construction. &
-The five-zone reference topology (Section~5.5) introduces structural asymmetry: three
+The five-zone reference topology (Section~\ref{sec:ref-topology}) introduces structural asymmetry: three
 to seven ECUs per zone, distinct traffic classes by zone function, and gPTP delay that
 grows with hop distance from the grandmaster. Status: \textbf{partially addressed}.
 Designed but not measured; closes when per-zone divergence is quantified and

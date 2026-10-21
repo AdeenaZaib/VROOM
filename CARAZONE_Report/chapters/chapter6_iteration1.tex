@@ -1,4 +1,5 @@
 \chapter{Iteration 1: Design and Implementation}
+\label{ch:iteration1}
 % ============================================================
 
 \section{Iteration Objectives}
@@ -51,12 +52,13 @@ synchronisation tree of depth three in which the four zone controllers are sibli
 \end{itemize}
 
 \section{Technical Implementation Details}
+\label{sec:technical-details}
 
 \textbf{Environment.} OMNeT++ 6.4.0 with INET 4.7.0, on macOS (Apple Silicon).
 The linked INET version is 4.7.0, which is the version whose
 \texttt{driftRate} parameter is not declared \texttt{@mutable}. That property is the
 reason the drift attack cannot be activated part-way through a run, and therefore the
-reason the drift result in Section~7.6 is reported as a limitation of the framework
+reason the drift result in Section~\ref{sec:edge-cases} is reported as a limitation of the framework
 rather than a finding about drift detectability.
 
 \textbf{Key files.}
@@ -139,6 +141,7 @@ configuration is in \texttt{ALWAYS\_ON\_CONFIGS}. A bystander zone in an attack 
 therefore labelled benign, which is what makes zone attribution a learnable target.
 
 \section{Algorithms and Technical Decisions}
+\label{sec:algorithms}
 
 \textbf{Windowing.} Raw per-node clock series are segmented into fixed-size
 observation windows. The window size is a single global design parameter applied
@@ -170,7 +173,7 @@ loop so that all zones are available simultaneously, which is a restructuring of
 perturbation by construction, and is therefore insensitive to any effect that moves the
 whole synchronisation tree together, including compromise at the grandmaster. This is
 a structural property rather than a tuning deficiency, and it bounds the detection claim
-to link-local timing integrity (Sections~2.7 and~7.6).
+to link-local timing integrity (Sections~\ref{sec:technical-challenges} and~\ref{sec:edge-cases}).
 
 \section{Tools, Frameworks and Technologies}
 
@@ -188,6 +191,7 @@ Flower & not yet adopted & Federated learning framework; selected for Iteration~
 \end{longtable}
 
 \section{Demonstration Evidence}
+\label{sec:demo-evidence}
 
 \begin{figure}[htbp]
 \centering
@@ -197,7 +201,7 @@ follow a single common trajectory; the individual traces are not separable at th
 scale, which is the expected behaviour of a converged gPTP domain. The transient
 before approximately $t = 0.5$~s is the synchronisation servo converging from its
 initial state. That transient is the benign population discussed in
-Section~7.6: it produces larger offset excursions than the attack does, which is why
+Section~\ref{sec:edge-cases}: it produces larger offset excursions than the attack does, which is why
 a fixed threshold on offset alone cannot separate the two.}
 \label{fig:offset-benign}
 \end{figure}
@@ -211,7 +215,7 @@ attack onset, with a second visible step at $t = 7$~s; every other clock continu
 to track the group. The attack is visible only as a disagreement between one zone
 and its siblings, not as an absolute fault in the victim's own clock, which is the
 observation the cross-zone sibling residual is built to capture
-(Section~6.7).}
+(Section~\ref{sec:algorithms}).}
 \label{fig:offset-attack}
 \end{figure}
 

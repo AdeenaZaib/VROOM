@@ -1,4 +1,5 @@
 \chapter{Software Requirements}
+\label{ch:requirements}
 % ============================================================
 
 \section{User Interactions / Use Cases}
@@ -193,6 +194,7 @@ coordinator; only model parameters and training metadata shall be exchanged.
 % measured. It is reported as planned in Section 9.5. Do not claim it as met.
 
 \section{Acceptance Criteria}
+\label{sec:acceptance-criteria}
 
 \begin{longtable}{p{0.1\textwidth} p{0.84\textwidth}}
 \toprule
@@ -230,17 +232,17 @@ offset exceeds the configured schedule margin, across all seeds. \\
 \textbf{Req.} & \textbf{Module} & \textbf{Design element} & \textbf{Implementation} & \textbf{Test} \\
 \midrule
 \endhead
-FR-01 & M1 & Sec.~5.1, Fig.~\ref{fig:topology} & \texttt{CarazoneZonalNetwork.ned} & TC-01 \\
-FR-02 & M1 & Sec.~5.2 & gPTP configuration in \texttt{omnetpp.ini} & TC-02 \\
-FR-03 & M1 & Sec.~5.4 & Seeded run configurations & TC-03 \\
-FR-04 & M2 & Sec.~5.8 & \texttt{DelayAttack}, \texttt{DriftAttack}, \texttt{SyncStarvation} & TC-04 \\
-FR-05 & M2 & Sec.~5.7 & Ground-truth record & TC-05 \\
-FR-06 & M3 & Sec.~5.8, Fig.~\ref{fig:activity} & \texttt{extract\_features.py} & TC-06 \\
-FR-07 & M3 & Sec.~5.6 & \texttt{extract\_features.py} & TC-07 \\
-FR-08 & M3 & Sec.~5.7 & \texttt{extract\_features.py} & TC-08 (DEF-01) \\
+FR-01 & M1 & Sec.~\ref{sec:architecture}, Fig.~\ref{fig:topology} & \texttt{CarazoneZonalNetwork.ned} & TC-01 \\
+FR-02 & M1 & Sec.~\ref{sec:components} & gPTP configuration in \texttt{omnetpp.ini} & TC-02 \\
+FR-03 & M1 & Sec.~\ref{sec:arch-decisions} & Seeded run configurations & TC-03 \\
+FR-04 & M2 & Sec.~\ref{sec:process-design} & \texttt{DelayAttack}, \texttt{DriftAttack}, \texttt{SyncStarvation} & TC-04 \\
+FR-05 & M2 & Sec.~\ref{sec:data-design} & Ground-truth record & TC-05 \\
+FR-06 & M3 & Sec.~\ref{sec:process-design}, Fig.~\ref{fig:activity} & \texttt{extract\_features.py} & TC-06 \\
+FR-07 & M3 & Sec.~\ref{sec:domain-model} & \texttt{extract\_features.py} & TC-07 \\
+FR-08 & M3 & Sec.~\ref{sec:data-design} & \texttt{extract\_features.py} & TC-08 (DEF-01) \\
 FR-09 & M3 & Table~\ref{tab:schema} & \texttt{features.csv} & TC-09 \\
-FR-11--FR-15 & M4, M5 & Sec.~5.1--5.3 & Planned, Iteration 03 & Planned \\
-FR-16--FR-18 & M6 & Sec.~5.1 & Planned, Iteration 04 & Planned \\
+FR-11--FR-15 & M4, M5 & Sec.~\ref{sec:architecture}--\ref{sec:interfaces} & Planned, Iteration 03 & Planned \\
+FR-16--FR-18 & M6 & Sec.~\ref{sec:architecture} & Planned, Iteration 04 & Planned \\
 \bottomrule
 \end{longtable}
 
