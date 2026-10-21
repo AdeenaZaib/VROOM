@@ -6,8 +6,8 @@
 \label{sec:research-method}
 The literature was investigated in three directions corresponding to the three
 bodies of work the project sits between: (i) federated learning for intrusion
-detection, (ii) automotive in-vehicle network security, and (iii) TSN protocol
-security, specifically gPTP. Sources were drawn from IEEE Xplore, ACM Digital
+detection~\cite{adil2026safid,huong2021ics,ruzafa2021privacy,zhang2022transfer,mao2025fedinnid,hu2025sdn,wang2025fedstgcn,altfaily2025graph,adil2026embedded,digregorio2024federated,shahsavari2026sok}, (ii) automotive in-vehicle network security~\cite{park2023zonal,meyer2024framework,meyer2020ingress,meyer2024filtering,appajosyula2024zonal,hackel2022securesdn,sorescu2026ota,zhou2021simulating}, and (iii) TSN protocol
+security, specifically gPTP~\cite{luo2021qci,ergenc2023tsnzeek,feng2024robusttsn,bulbul2023preemptive,alnajim2022scheduling,yucel2026icns,samp2026gptp,devos2023frer,fotouhi2023assessing,berardi2023tsn,kakade2022vulnerability}. Sources were drawn from IEEE Xplore, ACM Digital
 Library, ScienceDirect and arXiv, together with the relevant IEEE~802.1 standards
 documents.
 
@@ -36,14 +36,14 @@ student work. The result of that comparison is reported in Section~\ref{sec:comp
 \textbf{Source} & \textbf{Methodology} & \textbf{Results} & \textbf{Limitations} \\
 \midrule
 \endhead
-SAFID (2026) &
+SAFID~\cite{adil2026safid} &
 Selective federated learning, TDNet, domain adaptation, post-training quantization &
 99.75\% accuracy on CICIDS2017; 95.75\% on Edge-IIoTset; $6.5\times$
 inference-throughput improvement &
 Evaluated on generic IDS datasets rather than automotive zonal TSN traces;
 industrial segmented networks, not vehicle zonal \\
 \addlinespace
-Y\"ucel et al.\ (2026) &
+Y\"ucel et al.~\cite{yucel2026icns} &
 Physical avionics TSN testbed; unsupervised anomaly detection using Local Outlier
 Factor on gPTP timing features &
 Detection at 500\,ns and 1000\,ns offsets; F1 remained above 0.95 even for 25\,ns and
@@ -52,19 +52,19 @@ Avionics testbed, not automotive zonal TSN; no federated learning; single
 synchronisation domain; unsupervised framing driven by label scarcity that does not
 apply to a simulation-generated dataset \\
 \addlinespace
-TSNZeek (2023) &
+TSNZeek~\cite{ergenc2023tsnzeek} &
 Zeek extension with Spicy packet parsing and rule-based detection for TSN protocols &
 $\approx$5\% CPU overhead; 25\% CPU at 50\,Mbit/s, 45\% at 250\,Mbit/s; up to 2\,ms
 processing lag; detected all seven tested attacks &
 Does not address gPTP timing attacks, federated learning, or automotive zonal
 deployment; rules are stateful and centralized \\
 \addlinespace
-Sorescu et al.\ (2026) &
+Sorescu et al.~\cite{sorescu2026ota} &
 Model-based TARA using STRIDE and ISO/SAE 21434 assumptions &
 151 distributed, 259 domain-based and 270 zonal threat rows &
 Threat counts are model outputs, not measured attack probabilities or IDS results \\
 \addlinespace
-Adil et al.\ (2026) &
+Adil et al.~\cite{adil2026embedded} &
 Federated collaborative learning, NTTE traffic encoding, TCNnet, INT8 quantization,
 TIMM safety modelling &
 Up to 99.98\% accuracy; model size reduced from 2.81\,MB to 0.23\,MB; collision
@@ -92,10 +92,10 @@ departmental FYPs against those dimensions.
 \textbf{Work} & \textbf{FL} & \textbf{Automotive / zonal} & \textbf{TSN-native signals} \\
 \midrule
 \endhead
-SAFID (2026)                & Yes & No & No \\
-Y\"ucel et al.\ (2026)      & No  & No (avionics) & Yes \\
-TSNZeek (2023)              & No  & No (industrial) & Partial (rule-based) \\
-Adil et al.\ (2026)         & Yes & Yes (CAN/embedded) & No \\
+SAFID~\cite{adil2026safid}                & Yes & No & No \\
+Y\"ucel et al.~\cite{yucel2026icns}      & No  & No (avionics) & Yes \\
+TSNZeek~\cite{ergenc2023tsnzeek}              & No  & No (industrial) & Partial (rule-based) \\
+Adil et al.~\cite{adil2026embedded}         & Yes & Yes (CAN/embedded) & No \\
 F25-151-R-DIDS-IoV (FYP)    & Yes & Yes (IoV, not zonal) & No \\
 F25-209-R-BastionFed (FYP)  & Yes & No & No \\
 F25-378-D-AlertEye (FYP)    & Yes & No & No \\
@@ -247,47 +247,47 @@ propagates to detection latency, model size and communication volume. \\
 \endhead
 Automotive TSN can be represented with domains, gateways, periodic streams and
 scheduling in a discrete-event simulator &
-Zhou et al.\ (2021) &
+Zhou et al.~\cite{zhou2021simulating} &
 Use OMNeT++/INET rather than building a simulator from scratch; keep the topology
 small and seeded \\
 \addlinespace
 Clock offset, port state and synchronisation message behaviour expose automotive
 Ethernet synchronisation attacks &
-Fotouhi et al.\ (2023) &
+Fotouhi et al.~\cite{fotouhi2023assessing} &
 Commit offset, offset trend and synchronisation-interval features as the core
 feature family \\
 \addlinespace
 Some PTP attacks are stealthy and consume very little bandwidth &
-Berardi et al.\ (2023) &
+Berardi et al.~\cite{berardi2023tsn} &
 Do not rely on packet-volume features; make the generic-traffic-feature detector the
 control arm rather than the baseline to beat on volume \\
 \addlinespace
 gPTP timing features support detection at small offset magnitudes, with F1 above 0.95
 at 25\,ns and 50\,ns &
-Y\"ucel et al.\ (2026) &
+Y\"ucel et al.~\cite{yucel2026icns} &
 Adopt comparable timing features; adopt LOF as an additional baseline so results are
 comparable to published work \\
 \addlinespace
 Unsupervised framing in prior work is a response to label scarcity in real
 deployments &
-Y\"ucel et al.\ (2026) &
+Y\"ucel et al.~\cite{yucel2026icns} &
 Use supervised multiclass classification, since simulation supplies ground-truth
 labels; this also yields a model with trainable weights, which plain LOF does not,
 and is therefore FedAvg-compatible without a non-standard aggregation scheme \\
 \addlinespace
 Centralized, local-only and FedAvg comparison exposes the trade-off between federated
 performance and communication cost &
-Digregorio et al.\ (2024) &
+Digregorio et al.~\cite{digregorio2024federated} &
 Commit all three arms as the federated evaluation; retain FedProx as an extension \\
 \addlinespace
 Random IID partitions and accuracy-only evaluation overstate federated performance &
-Shahsavari et al.\ (2026) &
+Shahsavari et al.~\cite{shahsavari2026sok} &
 Use structurally heterogeneous zone profiles, split by scenario and seed, and report
 worst-client performance rather than only the mean \\
 \addlinespace
 Loss or manipulation of synchronisation causes clock divergence with a characteristic
 recovery profile &
-Kakade et al.\ (2022) &
+Kakade et al.~\cite{kakade2022vulnerability} &
 Use divergence and post-attack recovery behaviour as attack-validation signals before
 any model is trained \\
 \bottomrule

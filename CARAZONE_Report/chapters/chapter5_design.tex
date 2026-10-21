@@ -92,7 +92,7 @@ are explicitly excluded from this interface (NFR-07) \\
 \end{longtable}
 
 \textbf{External dependencies.} OMNeT++ 6.4.0 (simulation kernel, Qtenv/Cmdenv),
-INET 4.7.0 (TSN and gPTP modules), Python 3 with scientific stack for extraction and
+INET 4.7.0~\cite{inettsn} (TSN and gPTP modules), Python 3 with scientific stack for extraction and
 training, and a federated learning framework for the aggregation layer. Versions are
 pinned in Section~\ref{sec:dependencies}.
 
@@ -182,10 +182,10 @@ report is derived from it.
 No vehicle manufacturer publishes harness or ECU-placement data, so the topology is
 built as a representative reference rather than a copy of a production vehicle. Three
 published sources inform it. The zone-based in-vehicle architecture evaluated in
-\emph{Sensors} (2023) supplies the organising principle: ECUs are grouped into zones
+\emph{Sensors}~\cite{park2023zonal} supplies the organising principle: ECUs are grouped into zones
 by physical location, attached to the nearest zone controller, with a central compute
 unit as the inter-zone hub. The TSN anomaly-detection assessment framework of
-Meyer, H\"ackel, L\"ubeck, Korf and Schmidt (2024) supplies a precedent for a
+Meyer, H\"ackel, L\"ubeck, Korf and Schmidt~\cite{meyer2024framework} supplies a precedent for a
 ring-based zonal topology carrying
 corner lidar, front and rear cameras, infotainment, a connectivity gateway, a gPTP
 master and an ADAS unit, modelled in OMNeT++/INET. Industry material on zonal E/E

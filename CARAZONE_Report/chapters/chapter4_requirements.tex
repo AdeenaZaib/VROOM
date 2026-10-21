@@ -222,7 +222,7 @@ offset exceeds the configured schedule margin, across all seeds. \\
 
 \section{Requirements Traceability}
 
-\begin{longtable}{p{0.08\textwidth} p{0.14\textwidth} p{0.2\textwidth} p{0.22\textwidth} p{0.22\textwidth}}
+\begin{longtable}{p{0.13\textwidth} p{0.10\textwidth} p{0.17\textwidth} p{0.28\textwidth} p{0.18\textwidth}}
 \caption{Requirements traceability matrix}\label{tab:traceability}\\
 \toprule
 \textbf{Req.} & \textbf{Module} & \textbf{Design element} & \textbf{Implementation} & \textbf{Test} \\
@@ -232,17 +232,17 @@ offset exceeds the configured schedule margin, across all seeds. \\
 \textbf{Req.} & \textbf{Module} & \textbf{Design element} & \textbf{Implementation} & \textbf{Test} \\
 \midrule
 \endhead
-FR-01 & M1 & Sec.~\ref{sec:architecture}, Fig.~\ref{fig:topology} & \texttt{CarazoneZonalNetwork.ned} & TC-01 \\
+FR-01 & M1 & Sec.~\ref{sec:architecture}, Fig.~\ref{fig:topology} & \texttt{Carazone\allowbreak Zonal\allowbreak Network.ned} & TC-01 \\
 FR-02 & M1 & Sec.~\ref{sec:components} & gPTP configuration in \texttt{omnetpp.ini} & TC-02 \\
 FR-03 & M1 & Sec.~\ref{sec:arch-decisions} & Seeded run configurations & TC-03 \\
 FR-04 & M2 & Sec.~\ref{sec:process-design} & \texttt{DelayAttack}, \texttt{DriftAttack}, \texttt{SyncStarvation} & TC-04 \\
 FR-05 & M2 & Sec.~\ref{sec:data-design} & Ground-truth record & TC-05 \\
-FR-06 & M3 & Sec.~\ref{sec:process-design}, Fig.~\ref{fig:activity} & \texttt{extract\_features.py} & TC-06 \\
-FR-07 & M3 & Sec.~\ref{sec:domain-model} & \texttt{extract\_features.py} & TC-07 \\
-FR-08 & M3 & Sec.~\ref{sec:data-design} & \texttt{extract\_features.py} & TC-08 (DEF-01) \\
+FR-06 & M3 & Sec.~\ref{sec:process-design}, Fig.~\ref{fig:activity} & \texttt{extract\_\allowbreak features.py} & TC-06 \\
+FR-07 & M3 & Sec.~\ref{sec:domain-model} & \texttt{extract\_\allowbreak features.py} & TC-07 \\
+FR-08 & M3 & Sec.~\ref{sec:data-design} & \texttt{extract\_\allowbreak features.py} & TC-08 (DEF-01) \\
 FR-09 & M3 & Table~\ref{tab:schema} & \texttt{features.csv} & TC-09 \\
-FR-11--FR-15 & M4, M5 & Sec.~\ref{sec:architecture}--\ref{sec:interfaces} & Planned, Iteration 03 & Planned \\
-FR-16--FR-18 & M6 & Sec.~\ref{sec:architecture} & Planned, Iteration 04 & Planned \\
+FR-11--15 & M4, M5 & Sec.~\ref{sec:architecture}--\ref{sec:interfaces} & Planned, Iteration 03 & Planned \\
+FR-16--18 & M6 & Sec.~\ref{sec:architecture} & Planned, Iteration 04 & Planned \\
 \bottomrule
 \end{longtable}
 

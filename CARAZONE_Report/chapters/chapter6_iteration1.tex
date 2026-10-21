@@ -54,7 +54,7 @@ synchronisation tree of depth three in which the four zone controllers are sibli
 \section{Technical Implementation Details}
 \label{sec:technical-details}
 
-\textbf{Environment.} OMNeT++ 6.4.0 with INET 4.7.0, on macOS (Apple Silicon).
+\textbf{Environment.} OMNeT++ 6.4.0 with INET 4.7.0~\cite{inettsn}, on macOS (Apple Silicon).
 The linked INET version is 4.7.0, which is the version whose
 \texttt{driftRate} parameter is not declared \texttt{@mutable}. That property is the
 reason the drift attack cannot be activated part-way through a run, and therefore the
@@ -184,7 +184,7 @@ to link-local timing integrity (Sections~\ref{sec:technical-challenges} and~\ref
 \endhead
 OMNeT++ & 6.4.0 & Discrete-event simulation kernel; Cmdenv for batch runs, Qtenv for
 inspection \\
-INET & 4.7.0 & TSN and gPTP protocol models, clock drift modelling \\
+INET~\cite{inettsn} & 4.7.0 & TSN and gPTP protocol models, clock drift modelling \\
 Python & 3.x & Feature extraction, dataset construction \\
 Flower & not yet adopted & Federated learning framework; selected for Iteration~03, not yet introduced into the build \\
 \bottomrule
