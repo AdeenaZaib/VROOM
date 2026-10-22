@@ -124,28 +124,28 @@ Production vehicle integration or in-cabin driver interface \\
 \end{longtable}
 
 \subsection*{Scope items in progress, and deferred scope}
-\textbf{FRER-based detection (in scope, implementation in progress).} Frame
-Replication and Elimination for Reliability is committed scope and is under active
-development. It is not yet exercised in the dataset because the
-four-zone tree topology used for Iteration~1 gives each zone a single path to the
-backbone, and FRER requires disjoint redundant paths between talker and listener.
-That blocking dependency has since been removed. A five-zone ring reference topology
-has been designed, generated and structurally validated (Section~\ref{sec:ref-topology}); its automated
-check confirms that cutting any single ring or uplink link partitions nothing, which
-is the machine-checkable form of the disjoint-path requirement. The remaining work is
-therefore bounded and specified: configuring the 802.1CB sequence generation and
-recovery functions at the talker and listener ends of the redundant streams;
-injecting stream-redundancy manipulation as an attack; and adding the FRER feature
-family to the extraction pipeline: inter-member arrival skew, sequence-number
-deviation between redundant members, and inter-arrival cadence per member. The
-attack model is stream-redundancy manipulation: selective suppression or delay of one
-member of a replicated stream, which degrades the reliability guarantee while every
-frame remains individually authentic. This family is attractive for the project's
-central claim because its features are structurally independent of the gPTP offset
-residuals, so it tests whether the cross-zone residual principle generalises beyond
-the synchronisation plane. Scheduling and the exit criterion are given in
-Section~\ref{sec:remaining-iterations}. The topology dependency, previously the single blocker, is resolved in
-design and awaits a baseline simulation run.
+\textbf{FRER-based detection (in scope; simulated on the ring, feature extraction pending).}
+Frame Replication and Elimination for Reliability is committed scope. It is not
+exercised in the Iteration~1 dataset because the four-zone tree topology gives each zone
+a single path to the backbone, and FRER requires disjoint redundant paths between talker
+and listener. A five-zone ring reference topology removes that dependency
+(Section~\ref{sec:ref-topology}); its automated check confirms that cutting any single
+ring or uplink link partitions nothing, which is the machine-checkable form of the
+disjoint-path requirement. IEEE 802.1CB has since been configured on the ring for a
+protected brake-control stream, replication and duplicate elimination have been
+confirmed, and two stream-redundancy attacks, a path cut and a same-port flood, have been
+simulated and analysed, each leaving a distinct signature (Section~\ref{sec:ring-results}).
+The remaining work is bounded and specified: adding the FRER feature family to the
+extraction pipeline (inter-member arrival skew, sequence-number deviation between
+redundant members, and inter-arrival cadence per member), and implementing a
+protocol-level stream-redundancy attack. The attack model is stream-redundancy
+manipulation: selective suppression or delay of one member of a replicated stream,
+which degrades the reliability guarantee while every frame remains individually
+authentic. This family is attractive for the project's central claim because its
+features are structurally independent of the gPTP offset residuals, so it tests whether
+the cross-zone residual principle generalises beyond the synchronisation plane.
+Scheduling and the exit criterion are given in
+Section~\ref{sec:remaining-iterations}.
 
 \textbf{Schedule-window (802.1Qbv) violation detection (deferred).} TAS gate scheduling is not
 yet configured in the topology, so gate-conformance features cannot be computed.

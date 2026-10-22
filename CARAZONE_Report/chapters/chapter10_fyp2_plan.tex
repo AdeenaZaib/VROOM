@@ -28,14 +28,18 @@ against the benign envelope. Introduce differentiated per-zone traffic profiles
 (DEF-02).
 
 \textbf{Iteration 03c: Redundant topology and FRER.}
-The topology half of this iteration is complete in design: the five-zone ring
-(Section~\ref{sec:ref-topology}) is generated and passes its structural checks, including the
-single-link-cut partition test that establishes disjoint paths. What remains is to run
-the benign baseline on it and record the four behavioural checks listed in
-Section~\ref{sec:topology-validation}, then configure IEEE 802.1CB sequence generation at the talkers and
-sequence recovery at the listeners for the redundant streams. Implement
-stream-redundancy manipulation as a third attack class: selective suppression or
-delay of one member of a replicated stream in a single target zone. Add the FRER
+The topology and the first half of the FRER work are done. The five-zone ring
+(Section~\ref{sec:ref-topology}) is generated, passes its structural checks including the
+single-link-cut partition test that establishes disjoint paths, and has been run. The
+benign baseline completed without packet loss and with gPTP converged; IEEE 802.1CB
+replication and elimination were configured for the protected brake stream and confirmed;
+and two stream-redundancy attacks, a path cut and a same-port flood, were simulated and
+analysed (Section~\ref{sec:ring-results}). What remains is to record the deadline and
+link-utilisation checks among the four behavioural criteria of
+Section~\ref{sec:topology-validation}, and to implement a protocol-level stream-redundancy
+attack: selective suppression or delay of one member of a replicated stream in a single
+target zone, or sequence-number replay, neither of which configuration alone can
+produce. Add the FRER
 feature family to \texttt{extract\_features.py}, namely inter-member arrival skew,
 sequence-number deviation between redundant members, and per-member inter-arrival
 cadence, together with their cross-zone sibling residuals, computed by the same
@@ -45,9 +49,10 @@ attack class while the corresponding within-zone features remain at chance, whic
 would show the residual principle to be a property of the zonal architecture rather
 than of the synchronisation plane alone. This iteration is independent of
 Iteration~03b and may run in parallel, since it touches the topology and the feature
-extractor rather than the detector. Migrating the gPTP attack configurations from the
-four-zone tree to the five-zone ring is a prerequisite for both, and is the point at
-which the Chapter~\ref{ch:testing} results are re-established on the reference topology.
+extractor rather than the detector. The gPTP attack configurations have been migrated to the
+five-zone ring and run there (drift and asymmetric delay, Section~\ref{sec:ring-results}).
+Re-establishing the Chapter~\ref{ch:testing} results on the reference topology, as a
+labelled dataset and a trained detector, remains, and is a prerequisite for both.
 
 \textbf{Iteration 04: Federation and evaluation.}
 Federated client/server implementation; local-only, centralized-pooled and FedAvg
@@ -134,8 +139,9 @@ A genuine multiclass dataset exists, and the per-zone divergence of DEF-02 is
 measured rather than assumed \\
 \addlinespace
 03c &
-Benign baseline run on the ring topology; 802.1CB sequence generation and recovery;
-redundancy attack injection; FRER feature family &
+Benign baseline run on the ring topology, 802.1CB sequence generation and recovery and
+configuration-level redundancy attack injection (done, Section~\ref{sec:ring-results});
+protocol-level redundancy attack; FRER feature family &
 The four behavioural criteria of Section~\ref{sec:topology-validation} are met, and FRER residuals reach
 macro-F1 $> 0.90$ while the matching within-zone features remain at chance \\
 \addlinespace

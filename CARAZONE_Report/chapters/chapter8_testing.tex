@@ -219,20 +219,29 @@ appears in the extraction script's \texttt{ALWAYS\_ON\_CONFIGS} set rather than 
 gated on the attack start time.
 
 Applied from $t=0$, the manipulation is not an attack in any meaningful sense: it is a
-node whose oscillator runs at a different constant rate for the whole simulation, which
-is indistinguishable from legitimate component variation and which the gPTP servo is
-specifically designed to compensate. The observed network-wide behaviour is the protocol
+node whose oscillator runs at a different constant rate for the whole simulation, which, in the clock-offset dimension measured here, is indistinguishable from legitimate
+component variation and which the gPTP servo is specifically designed to compensate. The observed network-wide behaviour is the protocol
 operating correctly, not a detection failure.
 
 Three consequences are carried forward. First, the finding is a statement about attack
 realisability under this framework, not about the detectability of drift attacks in
 general; the stronger claim is not supported by this experiment and is not made.
-Second, drift is removed as a committed detection target, reducing the committed attack
-set to delay injection and synchronisation starvation. Third, if a runtime drift attack
+Second, drift is removed as a committed target for the cross-zone offset residual,
+reducing the committed attack set to delay injection and synchronisation starvation; a
+separate candidate signal for constant drift is described below. Third, if a runtime drift attack
 is required in FYP-2, it must be realised by a different mechanism, for example by
 subclassing the clock module to expose a mutable rate, or by post-processing the
 recorded trace, and the cost of that work is weighed against the alternative of
 deepening the evaluation of the two realisable attack classes.
+
+\textbf{Update from the ring topology.} Constant drift applied from $t=0$ was later
+re-run on the five-zone ring with the gPTP correction signals recorded
+(Section~\ref{sec:ring-results}). The clock offset still hides it, but
+\texttt{gmRateRatio} moves from about 0.99999 to about 0.99800 at 2000~ppm, so the signal
+that is absent from the offset dimension is present in the rate-ratio dimension. This does
+not change the realisability finding above, since a runtime drift attack remains
+unrealisable, and it leaves the committed attack set unchanged pending extraction of
+rate-ratio features.
 
 \textbf{Negative result: no fixed threshold separates attack from benign behaviour.}
 Two tuned thresholds on the absolute sibling offset residual were evaluated as
@@ -376,6 +385,9 @@ assertion that fails extraction when the two disagree. Status: open, low effort.
 The data generation path is validated for one attack class and found defective in one
 respect. The detection and federation paths are unvalidated because they are
 unimplemented. No detection performance figures are claimed at this stage, and none
-should be inferred from the dataset statistics reported above.
+should be inferred from the dataset statistics reported above. The attack simulations on
+the five-zone ring (Section~\ref{sec:ring-results}) are single-run observations of candidate
+signals; they have not been extracted into the dataset, and no detection performance is
+claimed from them.
 
 % ============================================================

@@ -38,6 +38,64 @@ model, without either change propagating beyond its own interface.
 \label{fig:arch}
 \end{figure}
 
+\section{Detection Methodology and Deployment View}
+\label{sec:methodology}
+
+Figure~\ref{fig:arch} describes the system as a stack of layers. Figure~\ref{fig:methodology}
+describes the same design from the deployment side: where each stage of the detection
+pipeline runs inside the vehicle, and what crosses the boundary between the zonal
+controllers and the central vehicle compute unit. It also separates the two phases of
+operation, training and real-time detection, because they use the same components but
+move different data.
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.95\textwidth]{figures/methodology.png}
+\caption[Detection methodology and federated deployment]{Detection methodology and
+deployment view. Solid arrows show the real-time detection path inside each zonal
+controller and the alert sent to the central vehicle compute unit. Dashed arrows,
+enclosed in the ``during training'' region, show the federated training exchange:
+local weight updates flow to the global model, and the aggregated model returns to each
+zone controller. The diagram shows two zones for clarity; the reference topology of
+Section~\ref{sec:ref-topology} has five.}
+\label{fig:methodology}
+\end{figure}
+
+\subsection*{Real-time detection path}
+
+Traffic from the endpoint devices in a zone reaches the zonal controller over automotive
+Ethernet. The feature extraction stage segments this traffic and the associated gPTP
+timing state into fixed-size observation windows and computes the per-window statistics
+and residuals defined in Section~\ref{sec:data-design}. The resulting feature vector is
+passed to the local IDS, which classifies the window using the deployed model and
+produces a real-time prediction. When the prediction indicates an attack, an alert is
+sent to the central vehicle compute unit, where it is logged and the attack class is
+recorded. This placement follows decision AD-6: the zone controller is the lowest point
+in the hierarchy that observes enough ports at once to compute the sibling-offset
+residual, so detection runs there rather than at the endpoint ECUs.
+
+\subsection*{Federated training path}
+
+During training, each zonal controller uses the feature records it has produced to train
+a local model. Only the resulting model weights are sent to the central vehicle compute
+unit, where they are combined into a global model by FedAvg. The updated weights are
+returned to every zone controller, and the aggregated model is the one deployed in the
+local IDS for real-time prediction. Feature records never leave the zone, which is the
+constraint stated in NFR-07 and the boundary defined by interface IF-5. Federation
+across zones, with the vehicle's own central compute unit as aggregator, is decision
+AD-3; training is static and one-shot (AD-4), so the dashed path in
+Figure~\ref{fig:methodology} is inactive once the model has been deployed.
+
+\subsection*{Relation to the layered architecture}
+
+The two views describe the same system. The zone-controller stages of
+Figure~\ref{fig:methodology} (feature extraction, local IDS, local model) correspond to
+layers L3 and L4 of Figure~\ref{fig:arch}, the weight and model exchange is the L4
+federation path over IF-5, and the alert flowing to the central unit is the IF-4 alert
+record consumed by L5. The simulation and observation layers (L1, L2) sit upstream of
+the diagram: in this project they stand in for the automotive Ethernet traffic and
+timing state that a real zone controller would observe.
+
 \section{Architectural Components}
 \label{sec:components}
 
@@ -175,8 +233,9 @@ which is recorded as defect DEF-02.
 
 A second topology, \texttt{topology5}, has since been designed and generated to remove
 both limits. It is the reference topology for the remainder of the project. It has
-been validated structurally but has not yet produced a dataset, so no result in this
-report is derived from it.
+been validated structurally and has produced the attack simulation results of
+Section~\ref{sec:ring-results}, but not yet a labelled feature dataset, so the detection
+results of Chapter~\ref{ch:testing} remain those of the tree.
 
 \subsection{Basis of the design}
 No vehicle manufacturer publishes harness or ECU-placement data, so the topology is
@@ -296,13 +355,15 @@ devices connect to the front or centre zone, and safety-critical ECUs are kept s
 from infotainment. Each placement is justified by a source or a stated reason.
 
 \textbf{Network behaviour, simulation.} The third level is specified here as the
-acceptance criteria for the benign baseline run, which is the first task of
-Iteration~03c (Section~\ref{sec:remaining-iterations}). The topology is accepted as behaviourally sound when all
+acceptance criteria for the benign baseline run, which was the first task of Iteration~03c (Section~\ref{sec:remaining-iterations}). The topology is accepted as behaviourally sound when all
 time-triggered flows meet their deadlines, link utilisation stays below approximately
 70\%, gPTP converges within the target bound, and FRER flows survive a cut ring link.
 Stating these criteria before the run is deliberate: it fixes what counts as a
 successful topology in advance, so that the baseline run tests the design rather than
-being read as a description of whatever it happens to produce.
+being read as a description of whatever it happens to produce. The baseline has since
+been run (Section~\ref{sec:ring-results}): there was no packet loss, gPTP converged, and
+FRER-protected delivery survived a crashed ring switch. The deadline and link-utilisation
+criteria have not yet been recorded.
 
 \subsection{Expected heterogeneity}
 Each zonal controller acts as a federated client whose data is the traffic passing
@@ -324,9 +385,9 @@ is reduced from open to partially addressed rather than closed.
 
 \subsection{Limitations}
 Four limitations are recorded against this topology. The device list and link lengths
-are representative rather than taken from a manufacturer's vehicle. The model carries no
-application traffic yet, so the heterogeneity described above is a design property and
-not a measured one. gPTP is statically configured with no backup grandmaster, so
+are representative rather than taken from a manufacturer's vehicle. The model carries five
+benign application flows, one representative per zone, but the heterogeneity described
+above is still a design property and not a measured one. gPTP is statically configured with no backup grandmaster, so
 grandmaster-failover behaviour cannot be exercised. Some zone switches have ten or
 eleven ports, which is higher than a typical automotive TSN switch; they are best read
 as zonal controllers with integrated switching rather than as discrete switches.
@@ -346,11 +407,13 @@ Followed from the zonal topology design, which maps a client to a physical zone
 rather than to an arbitrary partition. Client count remains a configuration parameter. \\
 \addlinespace
 Attack classes & Sync manipulation and delay injection $\rightarrow$ delay injection,
-sync starvation, drift (evaluated and excluded) &
+sync starvation, drift (runtime form not realisable) &
 Sync starvation is a concrete realisation of synchronisation manipulation. Drift
-manipulation was implemented and empirically found not to produce a zone-localisable
-signature (Section~\ref{sec:edge-cases}); it is retained in the report as a documented negative
-result rather than as a detection target. \\
+manipulation could not be realised as a runtime attack, and applied from $t=0$ it
+produced no zone-localisable offset signature (Section~\ref{sec:edge-cases}). On the ring, a
+constant drift is visible in the servo's rate ratio (Section~\ref{sec:ring-results}), so drift
+is retained as a documented negative result for the offset residual and as a candidate for
+rate-ratio features. \\
 \addlinespace
 Reference topology & Four-zone tree $\rightarrow$ five-zone ring with dual-homed
 centre &
@@ -363,12 +426,13 @@ Federated client count & Four $\rightarrow$ five &
 Follows the reference topology, which has five zones rather than four. The client
 count is a property of the topology, not an independent parameter. \\
 \addlinespace
-FRER-based detection & Not in proposal $\rightarrow$ committed scope, in progress &
+FRER-based detection & Not in proposal $\rightarrow$ committed scope, simulated on the ring &
 Added to the attack surface after the proposal, to test whether the cross-zone
-residual principle generalises beyond the synchronisation plane. Blocked on a single
-dependency, the absence of disjoint paths in the Iteration~1 tree, which the
-five-zone ring topology now resolves. The 802.1CB configuration and feature family
-are scheduled in Section~\ref{sec:remaining-iterations}. \\
+residual principle generalises beyond the synchronisation plane. The single
+dependency, the absence of disjoint paths in the Iteration~1 tree, is resolved by the
+five-zone ring topology, on which 802.1CB has been configured and two stream-redundancy
+attacks simulated (Section~\ref{sec:ring-results}). The FRER feature family is scheduled in
+Section~\ref{sec:remaining-iterations}. \\
 \addlinespace
 Team composition & Three-member ownership model $\rightarrow$ two members &
 Responsibilities reallocated across two members (Section~\ref{sec:workbreakdown}); each member retains a

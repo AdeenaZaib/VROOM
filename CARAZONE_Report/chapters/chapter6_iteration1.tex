@@ -229,6 +229,248 @@ absolute terms, which continues to follow the same broad shape, but its
 residual measures, and it is why a feature computed inside a single zone cannot see
 this attack while a cross-zone comparison can.
 
+\section{Attack Simulation Results on the Ring Topology}
+\label{sec:ring-results}
+
+The results in Sections~\ref{sec:demo-evidence} and~\ref{sec:edge-cases} were obtained on
+the four-zone tree. This section reports attack simulations on the five-zone ring
+reference topology of Section~\ref{sec:ref-topology}: five TSN switches, one gPTP
+grandmaster, and 25 endpoint ECUs together with the zonal controllers. Three attack
+families were run: constant oscillator drift, asymmetric link delay, and two attacks on
+an IEEE 802.1CB (FRER) protected stream. The aim was not yet detection accuracy but a
+narrower prior question: does each attack produce a measurable, separable signal that
+could serve as a feature?
+
+\subsection{Simulation pipeline and scenarios}
+
+All ring scenarios derive from a single generator (\texttt{gen\_topology.py}) that
+emits the OMNeT++ topology description and the benign baseline configuration from
+editable tables of zones, links and traffic flows. A separate attack configuration
+file includes the baseline and layers each attack on as a selectable scenario, so an
+attack run differs from the baseline only by the injected fault. A launcher
+(\texttt{run\_experiments.py}) executes the runs and writes a manifest recording, for
+every run, the scenario, the victim node and the attack window. Labelling for the
+extraction stage is therefore taken from the manifest at launch rather than
+reconstructed afterwards.
+
+Benign traffic consists of five UDP flows, one representative per zone, all addressed
+to the central compute unit. Result recording was extended beyond delivery counts and
+the synchronised clock to include the uncorrected underlying oscillator and the gPTP
+correction signals \texttt{gmRateRatio}, \texttt{neighborRateRatio} and
+\texttt{pdelay}. Those correction signals turned out to be the informative ones
+(Section~\ref{sec:ring-drift}). The scenario catalogue is given in
+Table~\ref{tab:ring-catalogue}. Drift and FRER runs last two simulated seconds, with
+gPTP converging in the first second and the attack opening in the second, and the batch
+completes in well under a minute.
+
+\begin{table}[htbp]
+\centering
+\caption{Ring scenario catalogue. All drift and FRER configurations run for two simulated seconds.}
+\label{tab:ring-catalogue}
+\vspace{0.8em}
+\small\setlength{\tabcolsep}{4pt}
+\begin{tabular}{>{\raggedright\arraybackslash}p{0.27\textwidth} >{\raggedright\arraybackslash}p{0.14\textwidth} >{\raggedright\arraybackslash}p{0.31\textwidth} >{\raggedright\arraybackslash}p{0.16\textwidth}}
+\toprule
+\textbf{Configuration} & \textbf{Type} & \textbf{Mechanism} & \textbf{Status} \\
+\midrule
+\texttt{Baseline} & benign & no fault & run, validated \\
+\texttt{Gptp\_Drift\_Deep} & gPTP & constant drift on \texttt{lidarRR} & run, analysed \\
+\texttt{Gptp\_Drift\_Shallow} & gPTP & constant drift on \texttt{gnssReceiver} & run \\
+\texttt{Gptp\_Drift\_Sweep} & gPTP & 500, 2000, 5000, 10000~ppm (four runs) & run \\
+\texttt{Gptp\_Drift\_Timed} & gPTP & drift introduced at $t=1$~s & not runnable (Section~\ref{sec:ring-limits}) \\
+\texttt{Frer\_Enabled} & benign & redundant \texttt{brakeECU} $\rightarrow$ \texttt{centralCompute} stream & run, validated \\
+\texttt{Frer\_PathCut} & FRER & crash \texttt{swFR} for 0.5~s & run, analysed \\
+\texttt{Frer\_DuplicateFlood} & FRER & rogue node floods the protected port & run, analysed \\
+\texttt{Frer\_Plus\_GptpDrift} & combined & drift on a FRER-path node & run \\
+% [[FILL]] Add the asymmetric-delay configuration here under its real name, and reconcile
+% the "eight of nine" count with the nine rows above.
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Benign baseline}
+
+The baseline completed to $t=2$~s with no packet loss, and delivery at the central
+compute unit matched the configured flow rates exactly: 17{,}000 packets in total across
+the five flows (2000, 8000, 2000, 4000 and 1000 for the 1~ms, 250~$\mu$s, 1~ms, 500~$\mu$s
+and 2~ms flows respectively). gPTP converged, and the victim node's synchronised clock
+stayed within roughly $2~\mu$s of the grandmaster for the whole run. That benign
+wander of about $\pm 2~\mu$s is the noise floor against which the claims below are
+measured.
+
+\subsection{Constant drift attack}
+\label{sec:ring-drift}
+
+A constant oscillator drift was forced on \texttt{lidarRR}, the deepest node in the
+synchronisation tree. Read from the synchronised clock, the attack is almost
+invisible. At 500~ppm the clock differs from the baseline by only about $1.1~\mu$s at
+$t=2$~s, which is smaller than the benign wander of about $\pm 2~\mu$s. A detector
+reading clock offset alone would not separate the two.
+
+The attack is visible in the correction the servo applies to stay locked. Under a
+2000~ppm drift, \texttt{gmRateRatio} moved from about 0.99999 in the baseline to about
+0.99800 and stayed there for the whole run (Table~\ref{tab:ring-drift}). That is a
+displacement of roughly 2000~ppm against benign fluctuations of tens of ppm, so about
+two orders of magnitude above the benign variation. \texttt{neighborRateRatio} shifts
+similarly, but it updates only once per peer-delay measurement and yields about two
+samples per run, so it is usable only as a coarse per-window statistic;
+\texttt{gmRateRatio} is the dense signal.
+
+\begin{table}[htbp]
+\centering
+\caption{Constant drift on \texttt{lidarRR}: the servo's correction records the attack that the corrected clock hides.}
+\label{tab:ring-drift}
+\vspace{0.8em}
+\small\setlength{\tabcolsep}{4pt}
+\begin{tabular}{>{\raggedright\arraybackslash}p{0.34\textwidth} >{\raggedright\arraybackslash}p{0.2\textwidth} >{\raggedright\arraybackslash}p{0.28\textwidth}}
+\toprule
+\textbf{Signal (at $t\approx 2$~s)} & \textbf{Baseline} & \textbf{Attack} \\
+\midrule
+Synchronised clock offset (500~ppm) & benign wander $\approx\pm 2~\mu$s & shift of $\approx 1.1~\mu$s \\
+\texttt{gmRateRatio} (2000~ppm) & $\approx 0.99999$ & $\approx 0.99800$, flat \\
+\texttt{neighborRateRatio} (2000~ppm) & $\approx 1.00006$ & $\approx 0.99807$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+A severity sweep at 500, 2000, 5000 and 10000~ppm showed the \texttt{gmRateRatio}
+displacement increasing monotonically with the injected drift, approximately equal to
+the drift itself. This gives a graded severity axis for training, and shows that the
+primary feature responds proportionally rather than only above a threshold.
+% [[FILL]] Add a table or figure of gmRateRatio against injected drift for the four sweep levels.
+
+The mechanism is straightforward. A servo that must continuously compensate a drifting
+oscillator records that effort in its rate ratio, so the attack appears in the
+correction even when the corrected output looks clean. This is why clock offset is
+insufficient as a drift feature and rate ratio is necessary.
+
+\subsection{Asymmetric delay attacks}
+\label{sec:ring-asym}
+
+Asymmetric delay was injected on the link at \texttt{swFL}. % [[FILL]] State the delay magnitude, the attacked link and direction, the attack onset, and the total run length; the results below use the 7--10~s window.
+Table~\ref{tab:ring-asym} gives the clock offset of three nodes before the attack and
+during the 7--10~s window.
+
+\begin{table}[htbp]
+\centering
+\caption{Asymmetric delay on \texttt{swFL}: offset shift at the victim, a downstream node and a control node.}
+\label{tab:ring-asym}
+\vspace{0.8em}
+\small\setlength{\tabcolsep}{4pt}
+\begin{tabular}{l l r r r}
+\toprule
+\textbf{Node} & \textbf{Role} & \textbf{Before ($\mu$s)} & \textbf{During, 7--10~s ($\mu$s)} & \textbf{Shift ($\mu$s)} \\
+\midrule
+\texttt{swFL} & victim & 0.01 & 2.72 & 2.71 \\
+\texttt{zcFL} & downstream & 0.006 & 2.718 & 2.711 \\
+\texttt{swFR} & control (opposite side) & 0.012 & 0.011 & $-0.001$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The victim shifts by $2.71~\mu$s. The zonal controller behind it inherits almost the same
+shift, $2.711~\mu$s, because gPTP distributes time down a chain and a corrupted parent
+hands its error to its children. The control node on the opposite side of the ring does
+not move. This is the spatial pattern on which the sibling-residual feature rests: the
+attack appears as a disagreement between one branch and its siblings rather than as a
+network-wide change.
+
+The peer-delay measurements show where the error enters. The peer delay measured at
+\texttt{swFL} rose from about 10~ns before the attack to about $3.4~\mu$s on average
+during it, while the peer delay measured at \texttt{zcFL} stayed at zero. The error is
+therefore injected on one link and propagates by inheritance; the downstream node is not
+mismeasuring its own link. This makes the attack attributable to a link, which is what
+success criterion SC-3 requires of an alert.
+
+\subsection{FRER attacks}
+\label{sec:ring-frer}
+
+With FRER enabled, the full 802.1CB pipeline (stream identification, sequence
+encoding and decoding, and the stream-relay merger) instantiated at the split point
+\texttt{swFL} and the merge point \texttt{swC}. The protected stream is the 1~ms
+\texttt{brakeECU} $\rightarrow$ \texttt{centralCompute} flow, replicated over two
+disjoint ring paths. In the benign FRER run the merger at \texttt{swC} received 24{,}060
+frames, forwarded 22{,}060 and dropped 2000, each dropped frame being 1024~B, which is
+the protected stream. The arithmetic closes, and the sink received all 2000 frames.
+The merger's dropped-frame count is therefore a direct measure of redundancy health,
+with a benign value equal to the protected stream's frame count.
+
+\begin{table}[htbp]
+\centering
+\caption{FRER signals under the two attacks. Each attack is visible in a different counter.}
+\label{tab:ring-frer}
+\vspace{0.8em}
+\small\setlength{\tabcolsep}{4pt}
+\begin{tabular}{>{\raggedright\arraybackslash}p{0.24\textwidth} >{\raggedright\arraybackslash}p{0.2\textwidth} >{\raggedright\arraybackslash}p{0.2\textwidth} >{\raggedright\arraybackslash}p{0.22\textwidth}}
+\toprule
+\textbf{Scenario} & \textbf{Duplicates eliminated at \texttt{swC}} & \textbf{Delivery at sink} & \textbf{Visible in} \\
+\midrule
+Benign (\texttt{Frer\_Enabled}) & 2000 & 2000 & reference \\
+Path cut & \textbf{1500} & 2000 & FRER mechanism \\
+Port flood & 2000 & \textbf{12000} & application rate \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\textbf{Path cut.} \texttt{swFR} was crashed at $t=1$~s and restarted at $t=1.5$~s,
+taking one redundant path down for half a second. Delivery was uninterrupted, because
+FRER masked the failure, so a packet-loss monitor would see nothing. The eliminated-duplicate
+count fell by exactly 500. That matches the outage: 0.5~s at 1000 frames per second leaves
+500 frames with no duplicate to eliminate. The failure is invisible in the service metric and
+exact to the frame in the protocol counter.
+
+\textbf{Port flood.} A rogue node, \texttt{radarFL}, sent to the protected port at five
+times the stream rate. The elimination counter did not change: the 2000 genuine duplicates
+were still the only frames dropped. The flood frames passed through to the application,
+so delivery at the sink rose from 2000 to 12000, which is the original 2000 plus the
+10{,}000 flood frames. The cause is that 802.1CB elimination keys on stream identity and
+sequence number, not on destination port, so a same-port flood never matches the protected
+stream. The attack appears as application-layer overload with the FRER mechanism
+untouched. It also shows why a true sequence-number replay, which would deceive
+elimination, requires tampering inside the sequence-encoding module and so cannot be
+produced by configuration alone.
+
+\subsection{Detection signals identified}
+
+Table~\ref{tab:ring-signals} collects the signals. In every case the naive metric
+(synchronised clock time, packet loss) is blind or ambiguous, and the protocol-mechanism
+metric (gPTP rate ratio, spatial offset pattern, FRER elimination count) is not.
+
+\begin{table}[htbp]
+\centering
+\caption{Candidate detection features identified by the ring attack simulations.}
+\label{tab:ring-signals}
+\vspace{0.8em}
+\small\setlength{\tabcolsep}{4pt}
+\begin{tabular}{>{\raggedright\arraybackslash}p{0.19\textwidth} >{\raggedright\arraybackslash}p{0.27\textwidth} >{\raggedright\arraybackslash}p{0.17\textwidth} >{\raggedright\arraybackslash}p{0.27\textwidth}}
+\toprule
+\textbf{Attack} & \textbf{Primary feature} & \textbf{Benign} & \textbf{Under attack} \\
+\midrule
+Constant drift & \texttt{gmRateRatio} per node & $\approx 1.0$ & persistent offset of about the drift \\
+Asymmetric delay & offset shift of a node relative to its siblings; \texttt{pdelay} on the victim link & bounded; $\approx 10$~ns & victim and descendants shift together; $\approx 3.4~\mu$s on the link \\
+FRER path cut & eliminations at \texttt{swC} & $\approx$ stream frame count & falls while a path is down \\
+FRER port flood & delivery count at sink & matches flow rate & rises \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Limitations of these results}
+\label{sec:ring-limits}
+
+These results are single runs. Repeated seeds are needed to establish variance before any
+model is trained on them. The attacks are configuration-level, acting on the oscillator,
+the link and the traffic, rather than protocol-level tampering with gPTP messages or
+802.1CB sequence numbers, which remains the planned extension. A constant drift is the
+easiest case for the servo to compensate, so the rate-ratio result should not be read as
+covering time-varying drift. That case cannot be produced by configuration, because
+INET's \texttt{driftRate} parameter is not marked mutable and cannot be changed
+mid-run, which is why \texttt{Gptp\_Drift\_Timed} fails at the moment the change is
+attempted. This is the same constraint described in Section~\ref{sec:edge-cases}. The
+finding here is narrower than that section's negative result and does not contradict it:
+a runtime drift attack remains unrealisable under this framework, but a drift present from
+$t=0$ is detectable through the servo's correction signal even though its clock offset is
+not.
+
 \section{Iteration Outcome}
 Iterations 01 and 02 met their exit criteria. The simulation produces repeatable,
 seeded attack effects; the extraction pipeline produces a labelled dataset. One
